@@ -14,6 +14,8 @@
 # Updated by K. Smith (ksmith37@nd.edu) to properly handle
 #  dependencies in ROOT_GENERATE_DICTIONARY
 
+message(STATUS "Entering findROOT.cmake")
+
 find_program(ROOT_CONFIG_EXECUTABLE root-config
   HINTS $ENV{ROOTSYS}/bin)
 

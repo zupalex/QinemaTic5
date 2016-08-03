@@ -11,11 +11,15 @@ message(STATUS "Installing to ${CMAKE_INSTALL_PREFIX}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 #Find the ROOT package and configure the flags and paths
+message(STATUS "Finding ROOT packages")
 find_package (ROOT REQUIRED)
+message(STATUS "cmake cxx flags set to ${CMAKE_CXX_FLAGS} ${ROOT_CXX_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ROOT_CXX_FLAGS}")
+message(STATUS "ROOT Include Dir: ${ROOT_INCLUDE_DIR}")
 include_directories(${ROOT_INCLUDE_DIR})
 link_directories(${ROOT_LIBRARY_DIR})
 
+message(STATUS "Processing through the source and include directories")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(${CMAKE_SOURCE_DIR}/source)
 
