@@ -677,12 +677,12 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
     string ejecElement = ( zEjec == 0 ? "n" : ( ( zEjec == 1 && aEjec == 1 ) ? "p" : rInfo->atomicElement[2] ) );
     string recoilElement = ( zRecoil == 0 ? "n" : ( ( zRecoil == 1 && aRecoil == 1 ) ? "p" : rInfo->atomicElement[3] ) );
 
-    mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
-                    aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
-
     beamEkLab = beamEk_;
     exEjec = exEjec_;
     exRecoil = exRecoil_;
+
+    mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
+                    aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
 
     massBeam = rInfo->atomicMassUnit[0] * 1e-6 * amu; // MeV
     massTarget = rInfo->atomicMassUnit[1] * 1e-6 * amu; // MeV
