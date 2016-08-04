@@ -9,7 +9,7 @@ float stepWidth_last;
 int quietMode_last;
 float exEjec_last, exRecoil_last;
 
-std::map<string, std::vector<RootKinCalc>> kinResMap;
+std::map<string, RootKinCalc> kinResMap;
 
 TGWindow* FindWindowByName ( std::string winName )
 {
@@ -85,14 +85,14 @@ void DisplayListOfReactions()
     }
 }
 
-float GetKinResIDValue ( RootKinCalc* kinRes, string ID )
+float GetKinResIDValue ( KinCalcRes kcr, string ID )
 {
-    if ( ID == "Ejec. Lab Angle" ) return kinRes->ejecLabAngle;
-    else if ( ID == "Ejec. Lab Energy" ) return kinRes->ejecLabEnergy;
-    else if ( ID == "Ejec. C.M. Angle" ) return kinRes->ejecCMAngle;
-    else if ( ID == "Recoil Lab Angle" ) return kinRes->recoilLabAngle;
-    else if ( ID == "Recoil C.M. Angle" ) return kinRes->recoilCMAngle;
-    else if ( ID == "Recoil Lab Energy" ) return kinRes->recoilLabEnergy;
+    if ( ID == "Ejec. Lab Angle" ) return kcr.ejecLabAngle;
+    else if ( ID == "Ejec. Lab Energy" ) return kcr.ejecLabEnergy;
+    else if ( ID == "Ejec. C.M. Angle" ) return kcr.ejecCMAngle;
+    else if ( ID == "Recoil Lab Angle" ) return kcr.recoilLabAngle;
+    else if ( ID == "Recoil C.M. Angle" ) return kcr.recoilCMAngle;
+    else if ( ID == "Recoil Lab Energy" ) return kcr.recoilLabEnergy;
     else return -1;
 }
 
@@ -134,6 +134,8 @@ void ReacInfo::ReinitMasses()
 {
     for ( short i = 0; i < 4; i++ )
     {
+        A[i] = 0;
+        Z[i] = 0;
         massExcess[i] = 0.0;
         deltaMassExcess[i] = 0.0;
         bindEnPerA[i] = 0.0;
@@ -509,6 +511,72 @@ void RootKinCalc::DecodeAtomicFormula ( std::ifstream& mass_db, string toDecode,
     return;
 }
 
+void RootKinCalc::GetAtomicFormula ( std::ifstream& mass_db, int mass, int charge, string& toReconstruct, short int memberID )
+{
+    string element = "";
+
+    if ( mass == 1 && charge == 1 )
+    {
+        toReconstruct = "p";
+    }
+    else if ( mass == 2 && charge == 1 )
+    {
+        toReconstruct = "d";
+    }
+    else if ( mass == 1 && charge == 0 )
+    {
+        toReconstruct = "n";
+    }
+    else if ( mass == 3 && charge == 1 )
+    {
+        toReconstruct = "t";
+    }
+    else
+    {
+        std::stringstream readMassDB;
+        string readLine;
+
+        int massTableLineBeg = InitReadMassesForKinematic ( mass_db );
+
+        for ( int i = 0; i < massTableLineBeg; i++ )
+        {
+            std::getline ( mass_db, readLine );
+        }
+
+        while ( std::getline ( mass_db, readLine ) )
+        {
+            readMassDB.clear();
+            readMassDB.str ( readLine );
+
+            short posMassExcess = 5, posBindingEnergy = -1, posBetaDecay = -1, posAMU = -1, posElement = 4;
+
+            string readWord[17];
+
+//         std::cout << "Read Line:\n";
+
+            for ( int i = 0; i < 17; i++ )
+            {
+                readMassDB >> readWord[i];
+//             std::cout << readWord[i] << "  ";
+            }
+
+//         std::cout << "\n";
+
+            GetRelevantInfoPositions ( readWord, posMassExcess, posBindingEnergy, posBetaDecay, posAMU, posElement );
+
+            if ( charge == std::stoi ( readWord[posElement-2] ) )
+            {
+                toReconstruct = Form ( "%i", mass );
+                toReconstruct += readWord[posElement];
+
+                break;
+            }
+        }
+
+        return;
+    }
+}
+
 void RootKinCalc::GetMassesForKinematic ( int charge, int mass, short memberID )
 {
     std::ifstream mass_db ( "./mass_db.dat" );
@@ -576,56 +644,12 @@ std::tuple<int, int> RootKinCalc::GetMassesForKinematic ( string particle, short
     return output;
 }
 
-void RootKinCalc::CalcKinematic ( float beamEk, float ejecLabAngle_, float exEjec, float exRecoil )
+void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_, float exEjec_, float exRecoil_ )
 {
     float dtr = TMath::DegToRad();
     float rtd = TMath::RadToDeg();
 
     float amu = 931.502; // MeV
-
-    ejecLabAngle = ejecLabAngle_;
-
-    massBeam = rInfo->atomicMassUnit[0] * 1e-6 * amu; // MeV
-    massTarget = rInfo->atomicMassUnit[1] * 1e-6 * amu; // MeV
-    massEjec = rInfo->atomicMassUnit[2] * 1e-6 * amu + exEjec; // MeV
-    massRecoil = rInfo->atomicMassUnit[3] * 1e-6 * amu + exRecoil; // MeV
-
-    totMassInput = massBeam + massTarget;
-
-    betaC = TMath::Sqrt ( beamEk * ( beamEk + 2*massBeam ) ) / ( totMassInput + beamEk );
-
-    cosagl = TMath::Cos ( ejecLabAngle * dtr );
-
-    qValueGS = ( rInfo->massExcess[0] + rInfo->massExcess[1] - rInfo->massExcess[2] - rInfo->massExcess[3] ) / 1000.;
-    qValueFinal = qValueGS - exEjec - exRecoil;
-
-    eCMi = TMath::Sqrt ( totMassInput * totMassInput + ( 2*beamEk*massTarget ) );
-    eCMf = eCMi + qValueFinal - totMassInput + massEjec + massRecoil;
-
-    e3CM = ( eCMf * eCMf + ( massEjec + massRecoil ) * ( massEjec - massRecoil ) ) / ( 2*eCMf );
-
-    beta3C = TMath::Sqrt ( 1 - ( ( massEjec * massEjec ) / ( e3CM * e3CM ) ) );
-
-    yNew = pow ( e3CM / massEjec, 2 ) * ( 1 - betaC * betaC );
-
-    b = -betaC * cosagl;
-    a = yNew + b*b;
-    c = 1 - yNew;
-
-    d__2 = b * b - a * c;
-
-    b3L1 = ( -b + TMath::Sqrt ( d__2 ) ) / a;
-
-    ejecLabEnergy = massEjec * ( 1 / TMath::Sqrt ( 1 - b3L1 * b3L1 ) - 1 );
-
-    ejecCMAngle = TMath::ACos ( ( b3L1 * cosagl - betaC ) / ( ( 1 - betaC * b3L1 * cosagl ) * beta3C ) ) * rtd;
-
-    return;
-}
-
-void RootKinCalc::GetReactionKinematic ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk, float exEjec, float exRecoil )
-{
-    float stepWidth = 0.1;
 
     int zRecoil, aRecoil;
 
@@ -633,6 +657,15 @@ void RootKinCalc::GetReactionKinematic ( int zBeam, int aBeam, int zTarget, int 
     aRecoil = aBeam + aTarget - aEjec;
 
     rInfo->ReinitMasses();
+
+    rInfo->A[0] = aBeam;
+    rInfo->A[1] = aTarget;
+    rInfo->A[2] = aEjec;
+    rInfo->A[3] = aRecoil;
+    rInfo->Z[0] = zBeam;
+    rInfo->Z[1] = zTarget;
+    rInfo->Z[2] = zEjec;
+    rInfo->Z[3] = zRecoil;
 
     GetMassesForKinematic ( zBeam, aBeam, 0 );
     GetMassesForKinematic ( zTarget, aTarget, 1 );
@@ -644,23 +677,115 @@ void RootKinCalc::GetReactionKinematic ( int zBeam, int aBeam, int zTarget, int 
     string ejecElement = ( zEjec == 0 ? "n" : ( ( zEjec == 1 && aEjec == 1 ) ? "p" : rInfo->atomicElement[2] ) );
     string recoilElement = ( zRecoil == 0 ? "n" : ( ( zRecoil == 1 && aRecoil == 1 ) ? "p" : rInfo->atomicElement[3] ) );
 
-    AssignLastUsedValues ( zBeam, aBeam, zTarget, aTarget, zEjec, aEjec, xAxisID_last, yAxisID_last, beamEk, xMin_last, xMax_last, stepWidth_last, false, exEjec, exRecoil );
+    mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
+                    aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
 
-    string mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
-                           aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEk, exEjec, exRecoil );
+    beamEkLab = beamEk_;
+    exEjec = exEjec_;
+    exRecoil = exRecoil_;
+
+    massBeam = rInfo->atomicMassUnit[0] * 1e-6 * amu; // MeV
+    massTarget = rInfo->atomicMassUnit[1] * 1e-6 * amu; // MeV
+    massEjec = rInfo->atomicMassUnit[2] * 1e-6 * amu + exEjec; // MeV
+    massRecoil = rInfo->atomicMassUnit[3] * 1e-6 * amu + exRecoil; // MeV
+
+    totMassInput = massBeam + massTarget;
+
+    beamEkCM = beamEkLab*massTarget / ( massBeam+massTarget );
+
+    betaC = TMath::Sqrt ( beamEkLab * ( beamEkLab + 2*massBeam ) ) / ( totMassInput + beamEkLab );
+
+    qValueGS = ( rInfo->massExcess[0] + rInfo->massExcess[1] - rInfo->massExcess[2] - rInfo->massExcess[3] ) / 1000.;
+    qValueFinal = qValueGS - exEjec - exRecoil;
+
+    reacAboveThr = ( beamEkCM + qValueGS ) > 0;
+
+    if ( !reacAboveThr ) return;
+
+    eCMi = TMath::Sqrt ( totMassInput * totMassInput + ( 2*beamEkLab*massTarget ) );
+    eCMf = eCMi + qValueFinal - totMassInput + massEjec + massRecoil;
+
+    e3CM = ( eCMf * eCMf + ( massEjec + massRecoil ) * ( massEjec - massRecoil ) ) / ( 2*eCMf );
+
+    beta3C = TMath::Sqrt ( 1 - ( ( massEjec * massEjec ) / ( e3CM * e3CM ) ) );
+
+    yNew = pow ( e3CM / massEjec, 2 ) * ( 1 - betaC * betaC );
+}
+
+void RootKinCalc::GetBaseKinematicInfo ( string beam, string target, string ejectile, float beamEk_, float exEjec_, float exRecoil_ )
+{
+    std::ifstream mass_db ( "./mass_db.dat" );
+
+    if ( !mass_db.is_open() )
+    {
+        std::cerr << "No File Found for the Masses Database!\n";
+        return;
+    }
+
+    int zBeam, aBeam, zTarget, aTarget, zEjec, aEjec;
+
+    DecodeAtomicFormula ( mass_db, beam, aBeam, zBeam, 0 );
+    mass_db.seekg ( 0 );
+    DecodeAtomicFormula ( mass_db, target, aTarget, zTarget,1 );
+    mass_db.seekg ( 0 );
+    DecodeAtomicFormula ( mass_db, ejectile, aEjec, zEjec, 2 );
+    mass_db.seekg ( 0 );
+
+    GetBaseKinematicInfo ( zBeam, aBeam, zTarget, aTarget, zEjec, aEjec, beamEk_, exEjec_, exRecoil_ );
+}
+
+void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
+{
+    float dtr = TMath::DegToRad();
+    float rtd = TMath::RadToDeg();
+
+    float amu = 931.502; // MeV
+
+    KinCalcRes* kcr;
+    kcr = &kinRes[ejecLabAngle_];
+
+    kcr->ejecLabAngle = ejecLabAngle_;
+
+    kcr->cosagl = TMath::Cos ( ejecLabAngle_ * dtr );
+
+    kcr->b = -betaC * kcr->cosagl;
+    kcr->a = yNew + kcr->b*kcr->b;
+    kcr->c = 1 - yNew;
+
+    kcr->d__2 = kcr->b * kcr->b - kcr->a * kcr->c;
+
+    kcr->b3L1 = ( -kcr->b + TMath::Sqrt ( kcr->d__2 ) ) / kcr->a;
+
+    kcr->ejecLabEnergy = massEjec * ( 1 / TMath::Sqrt ( 1 - kcr->b3L1 * kcr->b3L1 ) - 1 );
+
+    kcr->ejecCMAngle = TMath::ACos ( ( kcr->b3L1 * kcr->cosagl - betaC ) / ( ( 1 - betaC * kcr->b3L1 * kcr->cosagl ) * beta3C ) ) * rtd;
+
+    return;
+}
+
+void RootKinCalc::GetReactionKinematic ( )
+{
+    float stepWidth = 0.1;
+
+    if ( !reacAboveThr )
+    {
+        std::cout << "The reaction in below the threshold...\n";
+
+        return;
+    }
 
     float labAngle = 0.0;
 
     while ( labAngle <= 180.0 )
     {
-        CalcKinematic ( beamEk, labAngle, exEjec, exRecoil );
-
-        kinResMap[mapKey].push_back ( *this );
+        CalcKinematic ( labAngle );
 
 //         std::cout << kinResMap[mapKey][kinResMap[mapKey].size()-1].ejecLabAngle << " <-> " << kinResMap[mapKey][kinResMap[mapKey].size()-1].ejecLabEnergy << "\n";
 
         labAngle += stepWidth;
     }
+
+    kinResMap[mapKey] = *this;
 
     TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
 
@@ -690,60 +815,6 @@ void RootKinCalc::GetReactionKinematic ( int zBeam, int aBeam, int zTarget, int 
     }
 
     UpdateReactionListBox ( reacFrame );
-
-    return;
-}
-
-void RootKinCalc::GetReactionKinematic ( string beam, string target, string ejectile, float beamEk, float exEjec, float exRecoil )
-{
-    std::ifstream mass_db ( "./mass_db.dat" );
-
-    if ( !mass_db.is_open() )
-    {
-        std::cerr << "No File Found for the Masses Database!\n";
-        return;
-    }
-
-    int zBeam, aBeam, zTarget, aTarget, zEjec, aEjec;
-
-    DecodeAtomicFormula ( mass_db, beam, aBeam, zBeam, 0 );
-    mass_db.seekg ( 0 );
-    DecodeAtomicFormula ( mass_db, target, aTarget, zTarget,1 );
-    mass_db.seekg ( 0 );
-    DecodeAtomicFormula ( mass_db, ejectile, aEjec, zEjec, 2 );
-    mass_db.seekg ( 0 );
-
-    GetReactionKinematic ( zBeam, aBeam, zTarget, aTarget, zEjec, aEjec, beamEk, exEjec, exRecoil );
-
-    return;
-}
-
-void RootKinCalc::GetReactionKinematic ( float beamEk )
-{
-    if ( beamEk == -1 )
-    {
-        string beam, target, ejectile;
-        float exEjec, exRecoil;
-
-        std::cout << "Beam (ex: 12C, p): ";
-        std::cin >> beam;
-        std::cout << "Target (ex: d, 7Li): ";
-        std::cin >> target;
-        std::cout << "Ejectile (ex: n, t): ";
-        std::cin >> ejectile;
-        std::cout << "Beam Energy? ";
-        std::cin >> beamEk;
-        std::cout << "Final State Ejectile? ";
-        std::cin >> exEjec;
-        std::cout << "Final State Recoil? ";
-        std::cin >> exRecoil;
-
-        GetReactionKinematic ( beam, target, ejectile, beamEk, exEjec, exRecoil );
-    }
-    else
-    {
-        GetReactionKinematic ( zBeam_last, aBeam_last, zTarget_last, aTarget_last, zEjec_last, aEjec_last, beamEk, exEjec_last, exRecoil_last );
-    }
 
     return;
 }
@@ -838,13 +909,17 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
 
     float x_ = xMin;
 
-    TGraph* tempGr = new TGraph ( reacItr->second.size() );
+    TGraph* tempGr = new TGraph ( reacItr->second.kinRes.size() );
 
-    for ( unsigned short i = 0; i < reacItr->second.size(); i++ )
+    int counter = 0;
+
+    for ( auto itr = reacItr->second.kinRes.begin(); itr != reacItr->second.kinRes.end(); itr++ )
     {
 //         std::cout << GetKinResIDValue ( &reacItr->second[i], xAxisID ) << " <-> " << GetKinResIDValue ( &reacItr->second[i], yAxisID ) << "\n";
 
-        tempGr->SetPoint ( i, GetKinResIDValue ( &reacItr->second[i], xAxisID ), GetKinResIDValue ( &reacItr->second[i], yAxisID ) );
+        tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, xAxisID ), GetKinResIDValue ( itr->second, yAxisID ) );
+
+        counter++;
     }
 
     TGraph* gr = new TGraph ( ( int ) ( xMin - xMax ) / stepWidth );
@@ -959,11 +1034,11 @@ float RootKinCalc::ConvertSingleValue ( short reactionID, string fromQuantity, s
 
     AssignLastUsedValues ( zBeam_last, aBeam_last, zTarget_last, aTarget_last, zEjec_last, aEjec_last, fromQuantity, toQuantity, beamEk_last, xMin_last, xMax_last, stepWidth_last, quietMode_last, exEjec_last, exRecoil_last );
 
-    TGraph* tempGr = new TGraph ( reacItr->second.size() );
+    TGraph* tempGr = new TGraph ( reacItr->second.kinRes.size() );
 
-    for ( unsigned short i = 0; i < reacItr->second.size(); i++ )
+    for ( unsigned short i = 0; i < reacItr->second.kinRes.size(); i++ )
     {
-        tempGr->SetPoint ( i, GetKinResIDValue ( &reacItr->second[i], fromQuantity ), GetKinResIDValue ( &reacItr->second[i], toQuantity ) );
+//         tempGr->SetPoint ( i, GetKinResIDValue ( &reacItr->second[i], fromQuantity ), GetKinResIDValue ( &reacItr->second[i], toQuantity ) );
     }
 
     std::cout << fromQuantity << ": " << val << "  <--->  " << tempGr->Eval ( val ) << " :" << toQuantity << "\n";
@@ -1013,9 +1088,9 @@ void RootKinCalc::Dump ( short reactionID, short entry )
 
     std::advance ( reacItr, reactionID );
 
-    if ( entry >= reacItr->second.size() ) return;
+    if ( entry >= reacItr->second.kinRes.size() ) return;
 
-    RootKinCalc toDump = reacItr->second[entry];
+    RootKinCalc toDump = reacItr->second;
 
     std::cout << "********************************************\n";
     std::cout << "********************************************\n";
@@ -1047,32 +1122,33 @@ void RootKinCalc::Dump ( short reactionID, short entry )
 //     std::cout << "Atomic Mass Unit: " << atomicMassUnit[3] << " micro-u\n";
 //     std::cout << "V/S: " << vOVERs[3] << "\n";
 //     std::cout << "============================================\n";
+
 //     std::cout << "Dumping Calculations........\n";
-    std::cout << "Mass of the beam: " << toDump.massBeam << " MeV\n";
-    std::cout << "Mass of the target: " << toDump.massTarget << " MeV\n";
-    std::cout << "Mass of the ejectile: " << toDump.massEjec << " MeV\n";
-    std::cout << "Mass of the recoil: " << toDump.massRecoil << " MeV\n";
-    std::cout << "Total mass: " << toDump.totMassInput << " MeV\n";
-    std::cout << "Qvalue G.S: " << toDump.qValueGS << " MeV\n";
-    std::cout << "Qvalue Final State: " << toDump.qValueFinal << " MeV\n";
-    std::cout << "..........................\n";
-    std::cout << "betaC: " << toDump.betaC << "\n";
-    std::cout << "cosagl: " << toDump.cosagl << "\n";
-    std::cout << "eCMi: " << toDump.eCMi << "\n";
-    std::cout << "eCMf: " << toDump.eCMf << "\n";
-    std::cout << "e3CM: " << toDump.e3CM << "\n";
-    std::cout << "beta3C: " << toDump.beta3C << "\n";
-    std::cout << "yNew: " << toDump.yNew << "\n";
-    std::cout << "a: " << toDump.a << "\n";
-    std::cout << "b: " << toDump.b << "\n";
-    std::cout << "c: " << toDump.c << "\n";
-    std::cout << "d**2: " << toDump.d__2 << "\n";
-    std::cout << "b3L1: " << toDump.b3L1 << "\n";
-    std::cout << "..........................\n";
-    std::cout << "Ejectile Lab Energy @" << toDump.ejecLabAngle << " degrees: " << toDump.ejecLabEnergy << " MeV\n";
-    std::cout << "C.M Angle: " << toDump.ejecCMAngle << " degrees\n";
-    std::cout << "********************************************\n";
-    std::cout << "********************************************\n";
+//     std::cout << "Mass of the beam: " << toDump.massBeam << " MeV\n";
+//     std::cout << "Mass of the target: " << toDump.massTarget << " MeV\n";
+//     std::cout << "Mass of the ejectile: " << toDump.massEjec << " MeV\n";
+//     std::cout << "Mass of the recoil: " << toDump.massRecoil << " MeV\n";
+//     std::cout << "Total mass: " << toDump.totMassInput << " MeV\n";
+//     std::cout << "Qvalue G.S: " << toDump.qValueGS << " MeV\n";
+//     std::cout << "Qvalue Final State: " << toDump.qValueFinal << " MeV\n";
+//     std::cout << "..........................\n";
+//     std::cout << "betaC: " << toDump.betaC << "\n";
+//     std::cout << "cosagl: " << toDump.cosagl << "\n";
+//     std::cout << "eCMi: " << toDump.eCMi << "\n";
+//     std::cout << "eCMf: " << toDump.eCMf << "\n";
+//     std::cout << "e3CM: " << toDump.e3CM << "\n";
+//     std::cout << "beta3C: " << toDump.beta3C << "\n";
+//     std::cout << "yNew: " << toDump.yNew << "\n";
+//     std::cout << "a: " << toDump.a << "\n";
+//     std::cout << "b: " << toDump.b << "\n";
+//     std::cout << "c: " << toDump.c << "\n";
+//     std::cout << "d**2: " << toDump.d__2 << "\n";
+//     std::cout << "b3L1: " << toDump.b3L1 << "\n";
+//     std::cout << "..........................\n";
+//     std::cout << "Ejectile Lab Energy @" << toDump.ejecLabAngle << " degrees: " << toDump.ejecLabEnergy << " MeV\n";
+//     std::cout << "C.M Angle: " << toDump.ejecCMAngle << " degrees\n";
+//     std::cout << "********************************************\n";
+//     std::cout << "********************************************\n";
 }
 
 void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, float precision )
@@ -1177,3 +1253,4 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     return;
 }
+

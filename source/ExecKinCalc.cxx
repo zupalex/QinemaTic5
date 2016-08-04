@@ -25,8 +25,16 @@ TGNumberEntryField* targetExLabel;
 TGNumberEntryField* ejecExLabel;
 TGNumberEntryField* recoilExLabel;
 
-void RootKinCalc::OnClickCalcKin()
+RootKinCalc* RootKinCalc::OnClickUpdateInfo()
 {
+    std::ifstream mass_db ( "./mass_db.dat" );
+
+    if ( !mass_db.is_open() )
+    {
+        std::cerr << "No File Found for the Masses Database!\n";
+        return nullptr;
+    }
+
     RootKinCalc* kinCalc = new RootKinCalc();
 
     string beamStr, targetStr, ejecStr;
@@ -35,7 +43,7 @@ void RootKinCalc::OnClickCalcKin()
     targetStr = targetElLabel->GetText();
     ejecStr = ejecElLabel->GetText();
 
-    if ( beamStr.empty() || targetStr.empty() || ejecStr.empty() ) return;
+    if ( beamStr.empty() || targetStr.empty() || ejecStr.empty() ) return nullptr;
 
     float beamEk;
     float ejecEx, recEx;
@@ -44,7 +52,56 @@ void RootKinCalc::OnClickCalcKin()
     ejecEx = ejecExLabel->GetNumber();
     recEx = recoilExLabel->GetNumber();
 
-    kinCalc->GetReactionKinematic ( beamStr, targetStr, ejecStr, beamEk, ejecEx, recEx );
+    kinCalc->GetBaseKinematicInfo ( beamStr, targetStr, ejecStr, beamEk, ejecEx, recEx );
+
+    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
+
+    if ( mw == NULL )
+    {
+        std::cerr << "Main Window not found!\n";
+
+        return nullptr;
+    }
+
+    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
+
+    if ( mf == NULL )
+    {
+        std::cerr << "Main Frame not found!\n";
+
+        return nullptr;
+    }
+
+    TGTextEntry* recTE = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Recoil Element IF" ) );
+
+    recTE->SetText ( Form ( "%i%s", kinCalc->rInfo->A[3], kinCalc->rInfo->atomicElement[3].c_str() ) );
+
+    TGNumberEntryField* bCMEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam C.M. Energy IF" ) );
+
+    bCMEk->SetNumber ( kinCalc->beamEkCM );
+
+    TGNumberEntryField* thrIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Reaction Threshold IF" ) );
+
+    if ( thrIF == NULL )
+    {
+        std::cerr << "Reaction Threshold Display Box not found!\n";
+
+        return nullptr;
+    }
+
+    thrIF->SetNumber ( kinCalc->qValueGS );
+
+    if ( kinCalc->reacAboveThr ) thrIF->SetTextColor ( kGreen );
+    else thrIF->SetTextColor ( kRed );
+
+    return kinCalc;
+}
+
+void RootKinCalc::OnClickCalcKin()
+{
+    RootKinCalc* kinCalc = OnClickUpdateInfo();
+
+    kinCalc->GetReactionKinematic();
 }
 
 int main ( int argc, char *argv[] )
@@ -186,9 +243,19 @@ int main ( int argc, char *argv[] )
 
     mainIFFrame->AddFrame ( reacFrame );
 
+    // ------ Creating Main Reaction IF Frame ------ //
+
+    TGCompositeFrame* reacInfoFrame = new TGCompositeFrame ( mainIFFrame, 2000, 2000 );
+    reacInfoFrame->SetName ( "Reaction Info Frame" );
+    reacInfoFrame->SetLayoutManager ( new TGColumnLayout ( reacInfoFrame, 26 ) );
+
+    TGCompositeFrame* reacIFsFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
+    reacIFsFrame->SetName ( "Reaction Input Fields Frame" );
+    reacIFsFrame->SetLayoutManager ( new TGRowLayout ( reacIFsFrame, 26 ) );
+
     // ------ Creating Reaction Labels Frame ------ //
 
-    TGCompositeFrame* reacLabelsFrame = new TGCompositeFrame ( mainIFFrame, 2000, 2000 );
+    TGCompositeFrame* reacLabelsFrame = new TGCompositeFrame ( reacIFsFrame, 2000, 2000 );
     reacLabelsFrame->SetName ( "Reaction Labels Frame" );
     reacLabelsFrame->SetLayoutManager ( new TGColumnLayout ( reacLabelsFrame, 26 ) );
 
@@ -204,19 +271,23 @@ int main ( int argc, char *argv[] )
     reacLabelsFrame->AddFrame ( ejecLabel );
     reacLabelsFrame->AddFrame ( recoilLabel );
 
-    mainIFFrame->AddFrame ( reacLabelsFrame );
+    reacIFsFrame->AddFrame ( reacLabelsFrame );
 
     // ------ Creating Elements IF Labels Frame ------ //
 
-    TGCompositeFrame* elIFFrame = new TGCompositeFrame ( mainIFFrame, 2000, 2000 );
+    TGCompositeFrame* elIFFrame = new TGCompositeFrame ( reacIFsFrame, 2000, 2000 );
     elIFFrame->SetName ( "Elements IF Frame" );
     elIFFrame->SetLayoutManager ( new TGColumnLayout ( elIFFrame, 20 ) );
 
     TGLabel* elLabel = new TGLabel ( elIFFrame, "               Element" );
     beamElLabel = new TGTextEntry ( elIFFrame );
+    beamElLabel->SetName ( "Beam Element IF" );
     targetElLabel = new TGTextEntry ( elIFFrame );
+    targetElLabel->SetName ( "Target Element IF" );
     ejecElLabel = new TGTextEntry ( elIFFrame );
+    ejecElLabel->SetName ( "Ejectile Element IF" );
     recoilElLabel = new TGTextEntry ( elIFFrame );
+    recoilElLabel->SetName ( "Recoil Element IF" );
     recoilElLabel->SetState ( kFALSE );
 
     elIFFrame->AddFrame ( elLabel );
@@ -225,11 +296,11 @@ int main ( int argc, char *argv[] )
     elIFFrame->AddFrame ( ejecElLabel );
     elIFFrame->AddFrame ( recoilElLabel );
 
-    mainIFFrame->AddFrame ( elIFFrame );
+    reacIFsFrame->AddFrame ( elIFFrame );
 
     // ------ Creating Kinetic Energy IF Labels Frame ------ //
 
-    TGCompositeFrame* keIFFrame = new TGCompositeFrame ( mainIFFrame, 2000, 2000 );
+    TGCompositeFrame* keIFFrame = new TGCompositeFrame ( reacIFsFrame, 2000, 2000 );
     keIFFrame->SetName ( "Kinetic Energy IF Frame" );
     keIFFrame->SetLayoutManager ( new TGColumnLayout ( keIFFrame, 20 ) );
 
@@ -247,11 +318,11 @@ int main ( int argc, char *argv[] )
 //     keIFFrame->AddFrame ( ejecKeLabel );
 //     keIFFrame->AddFrame ( recoilKeLabel );
 
-    mainIFFrame->AddFrame ( keIFFrame );
+    reacIFsFrame->AddFrame ( keIFFrame );
 
     // ------ Creating Excitation Energy IF Labels Frame ------ //
 
-    TGCompositeFrame* exIFFrame = new TGCompositeFrame ( mainIFFrame, 2000, 2000 );
+    TGCompositeFrame* exIFFrame = new TGCompositeFrame ( reacIFsFrame, 2000, 2000 );
     exIFFrame->SetName ( "Excitation Energy IF Frame" );
     exIFFrame->SetLayoutManager ( new TGColumnLayout ( exIFFrame, 20 ) );
 
@@ -272,25 +343,59 @@ int main ( int argc, char *argv[] )
     exIFFrame->AddFrame ( ejecExLabel );
     exIFFrame->AddFrame ( recoilExLabel );
 
-    mainIFFrame->AddFrame ( exIFFrame );
+    reacIFsFrame->AddFrame ( exIFFrame );
 
-    controlFrame->AddFrame ( mainIFFrame, new TGLayoutHints ( kLHintsLeft, 20, 20, 20, 10 ) );
+    reacInfoFrame->AddFrame ( reacIFsFrame );
 
-    // ------ Creating Bottom Buttons Frame ------ //
+    // ------ Adding the Reaction Threshold Info ------ //
 
-    TGCompositeFrame* buttonsFrame = new TGCompositeFrame ( controlFrame, 2000, 2000 );
-    buttonsFrame->SetName ( "Excitation Energy IF Frame" );
-    buttonsFrame->SetLayoutManager ( new TGRowLayout ( buttonsFrame, 150 ) );
+    TGCompositeFrame* threshInfoFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
+    threshInfoFrame->SetName ( "Reaction Threshold Info Frame" );
+    threshInfoFrame->SetLayoutManager ( new TGRowLayout ( threshInfoFrame, 20 ) );
 
-    // ------ Adding the actions buttons ------ //
+    TGLabel* beamCMEnergyLabel = new TGLabel ( threshInfoFrame, "Beam C.M. Energy" );
+    TGNumberEntryField* beamCMEnIF = new TGNumberEntryField ( threshInfoFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    beamCMEnIF->SetName ( "Beam C.M. Energy IF" );
+    beamCMEnIF->Resize ( beamCMEnIF->GetDefaultSize() );
+    beamCMEnIF->SetState ( kFALSE );
 
-    TGTextButton* getReacKin = new TGTextButton ( buttonsFrame, "Get Reaction Kinematic", "RootKinCalc::OnClickCalcKin()" );
+    TGLabel* threshInfoLabel = new TGLabel ( threshInfoFrame, "G.S. to G.S.\nReaction Q value" );
+    TGNumberEntryField* threshInfoIF = new TGNumberEntryField ( threshInfoFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    threshInfoIF->SetName ( "Reaction Threshold IF" );
+    threshInfoIF->SetFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    threshInfoIF->Resize ( threshInfoIF->GetDefaultSize() );
+    threshInfoIF->SetState ( kFALSE );
+
+    threshInfoFrame->AddFrame ( beamCMEnergyLabel );
+    threshInfoFrame->AddFrame ( beamCMEnIF );
+
+    threshInfoFrame->AddFrame ( threshInfoLabel );
+    threshInfoFrame->AddFrame ( threshInfoIF );
+
+    reacInfoFrame->AddFrame ( threshInfoFrame );
+
+    // ------ Adding the Get Reaction Kinematic Button ------ //
+
+    TGCompositeFrame* kinCalcButtonsFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
+    kinCalcButtonsFrame->SetName ( "Kinematic Calculation Buttons Frame" );
+    kinCalcButtonsFrame->SetLayoutManager ( new TGRowLayout ( kinCalcButtonsFrame, 20 ) );
+
+    TGTextButton* updateReacKinInfo = new TGTextButton ( kinCalcButtonsFrame, "Update Info", "RootKinCalc::OnClickUpdateInfo()" );
+    updateReacKinInfo->SetFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    updateReacKinInfo->Resize ( updateReacKinInfo->GetDefaultSize() );
+
+    TGTextButton* getReacKin = new TGTextButton ( kinCalcButtonsFrame, "Get Reaction Kinematic", "RootKinCalc::OnClickCalcKin()" );
     getReacKin->SetFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
     getReacKin->Resize ( getReacKin->GetDefaultSize() );
 
-    buttonsFrame->AddFrame ( getReacKin );
+    kinCalcButtonsFrame->AddFrame ( updateReacKinInfo );
+    kinCalcButtonsFrame->AddFrame ( getReacKin );
 
-    controlFrame->AddFrame ( buttonsFrame, new TGLayoutHints ( kLHintsCenterX, 0, 0, 10, 10 ) );
+    reacInfoFrame->AddFrame ( kinCalcButtonsFrame );
+
+    mainIFFrame->AddFrame ( reacInfoFrame );
+
+    controlFrame->AddFrame ( mainIFFrame, new TGLayoutHints ( kLHintsLeft, 20, 20, 20, 10 ) );
 
     // ------ Wraping everything in the main frame ------ //
 

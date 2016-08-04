@@ -50,6 +50,8 @@ public:
     ~ReacInfo() {}
 
     //[0] == Beam, [1] == Target, [2] == Ejectile, [3] == Recoil
+    int A[4];
+    int Z[4];
     float massExcess[4]; // keV
     float deltaMassExcess[4]; // keV
     float bindEnPerA[4]; // keV
@@ -63,6 +65,24 @@ public:
     void ReinitMasses();
 };
 
+struct KinCalcRes
+{
+    float ejecLabAngle;
+
+    float cosagl;
+    float b;
+    float a;
+    float c;
+    float d__2;
+    float b3L1;
+
+    float ejecLabEnergy;
+    float ejecCMAngle;
+    float recoilLabEnergy;
+    float recoilLabAngle;
+    float recoilCMAngle;
+};
+
 class RootKinCalc
 {
 private:
@@ -73,6 +93,12 @@ public:
 
     ReacInfo* rInfo;
 
+    string mapKey;
+
+    float beamEkLab;
+    float exEjec;
+    float exRecoil;
+
     float massBeam;
     float massTarget;
     float massEjec;
@@ -80,9 +106,11 @@ public:
 
     float totMassInput;
 
-    float betaC;
+    float beamEkCM;
 
-    float cosagl;
+    bool reacAboveThr;
+
+    float betaC;
 
     float qValueGS;
     float qValueFinal;
@@ -96,29 +124,20 @@ public:
 
     float yNew;
 
-    float b;
-    float a;
-    float c;
-    float d__2;
-    float b3L1;
+    std::map<float, KinCalcRes> kinRes;
 
-    float ejecLabAngle;
-    float ejecLabEnergy;
-    float ejecCMAngle;
-    float recoilLabEnergy;
-    float recoilLabAngle;
-    float recoilCMAngle;
-
+    static RootKinCalc* OnClickUpdateInfo();
     static void OnClickCalcKin();
     static void OnClickPlotGraphs();
 
     static bool AssignLastUsedValues ( float zb_, float ab_, float zt_, float at_, float ze_, float ae_,
-                                string xAID_, string yAID_, float bek_,
-                                float xMin_, float xMax_, float stepWidth_, bool qm_, float exejec_, float exrec_ );
+                                       string xAID_, string yAID_, float bek_,
+                                       float xMin_, float xMax_, float stepWidth_, bool qm_, float exejec_, float exrec_ );
 
     int InitReadMassesForKinematic ( std::ifstream& mass_db );
 
     void DecodeAtomicFormula ( std::ifstream& mass_db, string toDecode, int& mass, int& charge, short memberID );
+    void GetAtomicFormula ( std::ifstream& mass_db, int mass, int charge, string& toReconstruct, short memberID );
 
     void GetRelevantInfoPositions ( string* readWord, short& posMassExcess, short& posBindingEnergy, short& posBetaDecay, short& posAMU, short& posElement );
 
@@ -129,11 +148,12 @@ public:
 
     std::tuple<int, int> GetMassesForKinematic ( string particle, short memberID );
 
-    void CalcKinematic ( float beamEk, float ejecLabAngle, float exEjec = 0.0, float exRecoil = 0.0 );
+    void GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_, float exEjec_ = 0.0, float exRecoil_ = 0.0 );
+    void GetBaseKinematicInfo ( string beam, string target, string ejectile, float beamEk_, float exEjec_ = 0.0, float exRecoil_ = 0.0 );
 
-    void GetReactionKinematic ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk, float exEjec, float exRecoil );
-    void GetReactionKinematic ( string beam, string target, string ejectile, float beamEk, float exEjec, float exRecoil );
-    void GetReactionKinematic ( float beamEk = -1 );
+    void CalcKinematic ( float ejecLabAngle_ );
+
+    void GetReactionKinematic ( );
 
     static TGraph* PlotKinematicGraph ( short reactionID, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw = true );
 
@@ -223,15 +243,14 @@ template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, 
     return charge;
 }
 
-extern std::map<string, std::vector<RootKinCalc>> kinResMap;
+extern std::map<string, RootKinCalc> kinResMap;
 
 TGWindow* FindWindowByName ( std::string winName );
 TGFrame* FindFrameByName ( TGCompositeFrame* pFrame, std::string frameName );
 
 bool CharIsDigit ( char toCheck );
 void DisplayListOfReactions();
-void DecodeAtomicFormula ( std::ifstream& mass_db, string toDecode, int& mass, int& charge, short memberID );
-float GetKinResIDValue ( RootKinCalc* kinRes, string ID );
+float GetKinResIDValue ( KinCalcRes kcr, string ID );
 string GetKinResIDString ( short ID );
 
 void UpdateReactionListBox ( TGListBox* lb );

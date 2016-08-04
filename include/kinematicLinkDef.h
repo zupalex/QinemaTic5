@@ -4,7 +4,9 @@
 #pragma link off all classes;
 #pragma link off all functions;
 #pragma link C++ nestedclasses;
- 
+
+#pragma link C++ struct KinCalcRes+;
+
 #pragma link C++ class RootKinCalc+;
 
 #endif
