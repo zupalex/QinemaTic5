@@ -304,7 +304,7 @@ int main ( int argc, char *argv[] )
     keIFFrame->SetName ( "Kinetic Energy IF Frame" );
     keIFFrame->SetLayoutManager ( new TGColumnLayout ( keIFFrame, 20 ) );
 
-    TGLabel* keLabel = new TGLabel ( keIFFrame, "           Kinetic Energy" );
+    TGLabel* keLabel = new TGLabel ( keIFFrame, "    Kinetic Energy (MeV)" );
     beamKeLabel = new TGNumberEntryField ( keIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
     beamKeLabel->SetNumber ( 0 );
 //     targetKeLabel = new TGNumberEntryField ( keIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
@@ -326,7 +326,7 @@ int main ( int argc, char *argv[] )
     exIFFrame->SetName ( "Excitation Energy IF Frame" );
     exIFFrame->SetLayoutManager ( new TGColumnLayout ( exIFFrame, 20 ) );
 
-    TGLabel* exLabel = new TGLabel ( exIFFrame, "      Excitation Energy" );
+    TGLabel* exLabel = new TGLabel ( exIFFrame, "  Excitation Energy (MeV)" );
     beamExLabel = new TGNumberEntryField ( exIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
     beamExLabel->SetNumber ( 0 );
     targetExLabel = new TGNumberEntryField ( exIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );

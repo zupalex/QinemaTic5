@@ -945,6 +945,9 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
         TCanvas* c = new TCanvas();
 
         gr->Draw ( "ALP" );
+
+        c->Update();
+        c->ForceUpdate();
     }
     else if ( doDraw )
     {
@@ -977,6 +980,8 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
 
         legend->Draw();
 
+        gPad->GetCanvas()->Update();
+        gPad->GetCanvas()->ForceUpdate();
     }
 
     return gr;
