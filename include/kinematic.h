@@ -11,6 +11,9 @@
 #include <pthread.h>
 #include <iomanip>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 using std::string;
 
 #include "TROOT.h"
@@ -129,6 +132,7 @@ public:
     static RootKinCalc* OnClickUpdateInfo();
     static void OnClickCalcKin();
     static void OnClickPlotGraphs();
+    static void OnClickWriteTable();
 
     static bool AssignLastUsedValues ( float zb_, float ab_, float zt_, float at_, float ze_, float ae_,
                                        string xAID_, string yAID_, float bek_,
@@ -164,7 +168,7 @@ public:
 
     void Dump ( short reactionID, short entry );
 
-    void WriteTableToFile ( short reactionID, float xMin, float xMax, float precision );
+    static void WriteTableToFile ( short reactionID, float xMin, float xMax, float precision );
 
     ClassDef ( RootKinCalc, 1 );
 };

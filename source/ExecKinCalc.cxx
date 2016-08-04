@@ -91,8 +91,8 @@ RootKinCalc* RootKinCalc::OnClickUpdateInfo()
 
     thrIF->SetNumber ( kinCalc->qValueGS );
 
-    if ( kinCalc->reacAboveThr ) thrIF->SetTextColor ( kGreen );
-    else thrIF->SetTextColor ( kRed );
+    if ( kinCalc->reacAboveThr ) thrIF->SetTextColor ( 0x009933 );
+    else thrIF->SetTextColor ( 0xff0000 );
 
     return kinCalc;
 }
@@ -102,6 +102,107 @@ void RootKinCalc::OnClickCalcKin()
     RootKinCalc* kinCalc = OnClickUpdateInfo();
 
     kinCalc->GetReactionKinematic();
+}
+
+void RootKinCalc::OnClickWriteTable()
+{
+    TList* selectedEntries = new TList();
+
+    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
+
+    if ( mw == NULL )
+    {
+        std::cerr << "Main Window not found!\n";
+
+        return;
+    }
+
+    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
+
+    if ( mf == NULL )
+    {
+        std::cerr << "Main Frame not found!\n";
+
+        return;
+    }
+
+    TGNumberEntryField* xMinIF_ = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Table XMin IF" ) );
+    TGNumberEntryField* xMaxIF_ = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Table XMax IF" ) );
+    TGNumberEntryField* stepIF_ = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Table Step Width IF" ) );
+
+    if ( xMinIF_ == NULL || xMaxIF_ == NULL || stepIF_ == NULL )
+    {
+        std::cerr << "Unabled to read the Axis range and step width\n";
+
+        return;
+    }
+
+    float xMin_, xMax_, stepWidth_;
+
+    xMin_ = xMinIF_->GetNumber();
+    xMax_ = xMaxIF_->GetNumber();
+    stepWidth_ = stepIF_->GetNumber();
+
+    if ( xMin_ >= xMax_ )
+    {
+        std::cerr << "X Min has to be bigger than X Max!\n";
+
+        return;
+    }
+
+    if ( xMax_ > 180 )
+    {
+        std::cerr << "X Max cannot be bigger than 180\n";
+
+        return;
+    }
+
+    if ( stepWidth_ <= 0 )
+    {
+        std::cerr << "The Step Width cannot be 0\n";
+
+        return;
+    }
+
+    TGListBox* reacFrame = dynamic_cast<TGListBox*> ( FindFrameByName ( mf, "Reactions ListBox" ) );
+
+    if ( reacFrame == NULL )
+    {
+        std::cerr << "Reaction ListBox not found!\n";
+
+        return;
+    }
+
+    reacFrame->GetSelectedEntries ( selectedEntries );
+
+    TIter selectedEntryItr ( selectedEntries );
+
+    while ( selectedEntryItr.Next() )
+    {
+        string reacTitle = ( ( TGLBEntry* ) *selectedEntryItr )->GetTitle();
+
+        auto found = kinResMap.find ( reacTitle );
+
+        int counter = -1;
+
+        for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
+        {
+            counter++;
+
+            if ( itr == found ) break;
+        }
+
+        if ( counter == kinResMap.size() )
+        {
+            std::cerr << "ERROR: selected reaction somehow not anymore in the reactions map !?\n";
+
+            return;
+        }
+
+        short reacID = counter;
+
+        WriteTableToFile ( reacID, xMin_, xMax_, stepWidth_ );
+    }
 }
 
 int main ( int argc, char *argv[] )
@@ -134,7 +235,7 @@ int main ( int argc, char *argv[] )
 
     TGListBox *reacListBox = new TGListBox ( reacFrame, 90 );
     reacListBox->SetName ( "Reactions ListBox" );
-    reacListBox->Resize ( 375, 150 );
+    reacListBox->Resize ( 420, 150 );
     reacListBox->SetMultipleSelections ( kTRUE );
 
     reacFrame->AddFrame ( reacListLabel );
@@ -393,6 +494,63 @@ int main ( int argc, char *argv[] )
 
     reacInfoFrame->AddFrame ( kinCalcButtonsFrame );
 
+    // ------ Adding the Table Output Menu ------ //
+
+    TGCompositeFrame* tableOutputMainFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
+    tableOutputMainFrame->SetName ( "Table Output Main Frame" );
+    tableOutputMainFrame->SetLayoutManager ( new TGRowLayout ( tableOutputMainFrame, 20 ) );
+
+    TGCompositeFrame* tableLablesFrame = new TGCompositeFrame ( tableOutputMainFrame, 2000, 2000 );
+    tableLablesFrame->SetName ( "Table Labels Frame" );
+    tableLablesFrame->SetLayoutManager ( new TGColumnLayout ( tableLablesFrame, 20 ) );
+
+    TGLabel* tableXMinLabel = new TGLabel ( tableLablesFrame, "X Min:" );
+    TGLabel* tableXMaxLabel = new TGLabel ( tableLablesFrame, "X Max:" );
+    TGLabel* tableStepWidthLabel = new TGLabel ( tableLablesFrame, "Step Width:" );
+
+    tableLablesFrame->AddFrame ( tableXMinLabel );
+    tableLablesFrame->AddFrame ( tableXMaxLabel );
+    tableLablesFrame->AddFrame ( tableStepWidthLabel );
+
+    tableOutputMainFrame->AddFrame ( tableLablesFrame );
+
+    TGCompositeFrame* tableIFFrame = new TGCompositeFrame ( tableOutputMainFrame, 2000, 2000 );
+    tableIFFrame->SetName ( "Table IF Frame" );
+    tableIFFrame->SetLayoutManager ( new TGColumnLayout ( tableIFFrame, 20 ) );
+
+    TGNumberEntryField* tableXMinIF = new TGNumberEntryField ( tableIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    tableXMinIF->SetName ( "Table XMin IF" );
+    tableXMinIF->Resize ( beamCMEnIF->GetDefaultSize() );
+    tableXMinIF->SetNumber ( 0 );
+    TGNumberEntryField* tableXMaxIF = new TGNumberEntryField ( tableIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    tableXMaxIF->SetName ( "Table XMax IF" );
+    tableXMaxIF->Resize ( beamCMEnIF->GetDefaultSize() );
+    tableXMaxIF->SetNumber ( 180 );
+    TGNumberEntryField* tableStepWidthIF = new TGNumberEntryField ( tableIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    tableStepWidthIF->SetName ( "Table Step Width IF" );
+    tableStepWidthIF->Resize ( beamCMEnIF->GetDefaultSize() );
+    tableStepWidthIF->SetNumber ( 1 );
+
+    tableIFFrame->AddFrame ( tableXMinIF );
+    tableIFFrame->AddFrame ( tableXMaxIF );
+    tableIFFrame->AddFrame ( tableStepWidthIF );
+
+    tableOutputMainFrame->AddFrame ( tableIFFrame );
+
+    TGCompositeFrame* tableButtonsFrame = new TGCompositeFrame ( tableOutputMainFrame, 2000, 2000 );
+    tableButtonsFrame->SetName ( "Table Buttons Frame" );
+    tableButtonsFrame->SetLayoutManager ( new TGColumnLayout ( tableButtonsFrame, 20 ) );
+
+    TGTextButton* writeTableButton = new TGTextButton ( tableButtonsFrame, "Write Table", "RootKinCalc::OnClickWriteTable()" );
+    writeTableButton->SetFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    writeTableButton->Resize ( writeTableButton->GetDefaultSize() );
+
+    tableButtonsFrame->AddFrame ( writeTableButton );
+
+    tableOutputMainFrame->AddFrame ( tableButtonsFrame );
+
+    reacInfoFrame->AddFrame ( tableOutputMainFrame );
+
     mainIFFrame->AddFrame ( reacInfoFrame );
 
     controlFrame->AddFrame ( mainIFFrame, new TGLayoutHints ( kLHintsLeft, 20, 20, 20, 10 ) );
@@ -409,5 +567,6 @@ int main ( int argc, char *argv[] )
 
     theApp->Run();
 }
+
 
 

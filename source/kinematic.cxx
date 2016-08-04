@@ -1218,7 +1218,16 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
     std::size_t foundStar2 = outputName.find ( "*" );
     outputName.replace ( foundStar2, 2, "xR" );
 
-    outputName = "./" + outputName + ".dat";
+    struct stat checkDir;
+
+    stat ( "./tables/", &checkDir );
+
+    if ( ! ( checkDir.st_mode & S_IFDIR ) )
+    {
+        mkdir ( "./tables/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+    }
+
+    outputName = "./tables/" + outputName + ".dat";
 
     std::cout << "Writing table to file: " << outputName << "\n";
 
@@ -1258,4 +1267,5 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     return;
 }
+
 
