@@ -25,6 +25,51 @@ TGNumberEntryField* targetExLabel;
 TGNumberEntryField* ejecExLabel;
 TGNumberEntryField* recoilExLabel;
 
+CalcMonitor* CalcMonitor::s_instance = nullptr;
+
+CalcMonitor* CalcMonitor::CreateCalcMonitor()
+{
+    if ( s_instance == NULL )
+    {
+        s_instance = new CalcMonitor();
+    }
+
+    return s_instance;
+}
+
+void CalcMonitor::OnClickSingleCalcRB()
+{
+    std::cout << "A button has been Clicked!\n";
+
+    TGRadioButton* clickedButton = ( TGRadioButton* ) gTQSender; // gTQSender gives the current "sender".
+
+    std::cout << "Which one? -> " << clickedButton->GetName() << "\n";
+
+    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
+
+    if ( mw == NULL )
+    {
+        std::cerr << "Main Window not found!\n";
+
+        return;
+    }
+
+    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
+
+    if ( mf == NULL )
+    {
+        std::cerr << "Main Frame not found!\n";
+
+        return;
+    }
+
+    TGRadioButton* ejecLabRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Angle RB SC" ) ); // Check from line 601 for the names of the other elements we want to interact with
+
+    if ( ejecLabRB != NULL ) std::cout << "We want to do something with the TGRadioButton named " << ejecLabRB->GetName() << "\n"; // Now let's get the other buttons and input fields and see what we should do
+}
+
+ClassImp ( CalcMonitor );
+
 RootKinCalc* RootKinCalc::OnClickUpdateInfo()
 {
     std::ifstream mass_db ( "./mass_db.dat" );
@@ -210,6 +255,8 @@ int main ( int argc, char *argv[] )
     // Create an interactive ROOT application
     TRint *theApp = new TRint ( "Rint", &argc, argv );
 
+    CalcMonitor* calcM = CalcMonitor::CreateCalcMonitor();
+
     TGMainFrame* controlFrame = new TGMainFrame ( gClient->GetRoot(), 2000, 2000 );
     controlFrame->SetWindowName ( "ROOT Kinematic Calculator" );
     controlFrame->SetName ( "ROOT Kinematic Calculator" );
@@ -294,7 +341,7 @@ int main ( int argc, char *argv[] )
 
     TGCompositeFrame* axisLabelsFrame = new TGCompositeFrame ( plotOptionsFrame, 2000, 2000 );
     axisLabelsFrame->SetName ( "Axis Labels Frame" );
-    axisLabelsFrame->SetLayoutManager ( new TGColumnLayout ( axisLabelsFrame, 20 ) );
+    axisLabelsFrame->SetLayoutManager ( new TGColumnLayout ( axisLabelsFrame, 26 ) );
 
     TGLabel* xMinLabel = new TGLabel ( axisLabelsFrame, "X Min:" );
     TGLabel* xMaxLabel = new TGLabel ( axisLabelsFrame, "X Max:" );
@@ -502,7 +549,7 @@ int main ( int argc, char *argv[] )
 
     TGCompositeFrame* tableLablesFrame = new TGCompositeFrame ( tableOutputMainFrame, 2000, 2000 );
     tableLablesFrame->SetName ( "Table Labels Frame" );
-    tableLablesFrame->SetLayoutManager ( new TGColumnLayout ( tableLablesFrame, 20 ) );
+    tableLablesFrame->SetLayoutManager ( new TGColumnLayout ( tableLablesFrame, 26 ) );
 
     TGLabel* tableXMinLabel = new TGLabel ( tableLablesFrame, "X Min:" );
     TGLabel* tableXMaxLabel = new TGLabel ( tableLablesFrame, "X Max:" );
@@ -551,11 +598,101 @@ int main ( int argc, char *argv[] )
 
     reacInfoFrame->AddFrame ( tableOutputMainFrame );
 
+    // ------ Adding the Single Calculation Menu ------ //
+
+    TGCompositeFrame* singleCalcMainFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
+    singleCalcMainFrame->SetName ( "Single Calculation Main Frame" );
+    singleCalcMainFrame->SetLayoutManager ( new TGRowLayout ( singleCalcMainFrame, 20 ) );
+
+    TGCompositeFrame* singleCalcLabelsSubFrame1 = new TGCompositeFrame ( singleCalcMainFrame, 2000, 2000 );
+    singleCalcLabelsSubFrame1->SetName ( "Single Calc Labels Sub Frame 1" );
+    singleCalcLabelsSubFrame1->SetLayoutManager ( new TGColumnLayout ( singleCalcLabelsSubFrame1, 26 ) );
+
+    TGRadioButton* sCEjecLabAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. Lab Angle" );
+    sCEjecLabAngleRB->SetName ( "Ejec. Lab Angle RB SC" );
+    sCEjecLabAngleRB->SetState ( kButtonDown );
+    TGRadioButton* esCEecLabEnergyRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. Lab Energy" );
+    esCEecLabEnergyRB->SetName ( "Ejec. Lab Energy RB SC" );
+    TQObject::Connect ( esCEecLabEnergyRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
+    TGRadioButton* sCEjecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. C.M. Angle" );
+    sCEjecCMAngleRB->SetName ( "Ejec. C.M. Angle RB SC" );
+
+    singleCalcLabelsSubFrame1->AddFrame ( sCEjecLabAngleRB );
+    singleCalcLabelsSubFrame1->AddFrame ( esCEecLabEnergyRB );
+    singleCalcLabelsSubFrame1->AddFrame ( sCEjecCMAngleRB );
+
+    singleCalcMainFrame->AddFrame ( singleCalcLabelsSubFrame1 );
+
+    TGCompositeFrame* singleCalcIFSubFrame1 = new TGCompositeFrame ( singleCalcMainFrame, 2000, 2000 );
+    singleCalcIFSubFrame1->SetName ( "Single Calculation IF Sub Frame 1" );
+    singleCalcIFSubFrame1->SetLayoutManager ( new TGColumnLayout ( singleCalcIFSubFrame1, 20 ) );
+
+    TGNumberEntryField* sCEjecLabAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame1, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    sCEjecLabAngleIF->SetName ( "Ejec. Lab Angle IF SC" );
+    sCEjecLabAngleIF->Resize ( sCEjecLabAngleIF->GetDefaultSize() );
+    sCEjecLabAngleIF->SetNumber ( 0 );
+    TGNumberEntryField* esCEecLabEnergyIF = new TGNumberEntryField ( singleCalcIFSubFrame1, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    esCEecLabEnergyIF->SetName ( "Ejec. Lab Energy IF SC" );
+    esCEecLabEnergyIF->Resize ( esCEecLabEnergyIF->GetDefaultSize() );
+    esCEecLabEnergyIF->SetState ( kFALSE );
+    TGNumberEntryField* sCEjecCMAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame1, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    sCEjecCMAngleIF->SetName ( "Ejec. C.M. Angle IF SC" );
+    sCEjecCMAngleIF->Resize ( sCEjecCMAngleIF->GetDefaultSize() );
+    sCEjecCMAngleIF->SetState ( kFALSE );
+
+    singleCalcIFSubFrame1->AddFrame ( sCEjecLabAngleIF );
+    singleCalcIFSubFrame1->AddFrame ( esCEecLabEnergyIF );
+    singleCalcIFSubFrame1->AddFrame ( sCEjecCMAngleIF );
+
+    singleCalcMainFrame->AddFrame ( singleCalcIFSubFrame1 );
+
+    TGCompositeFrame* singleCalcLabelsSubFrame2 = new TGCompositeFrame ( singleCalcMainFrame, 2000, 2000 );
+    singleCalcLabelsSubFrame2->SetName ( "Single Calc Labels Sub Frame 2" );
+    singleCalcLabelsSubFrame2->SetLayoutManager ( new TGColumnLayout ( singleCalcLabelsSubFrame2, 26 ) );
+
+    TGRadioButton* sCRecLabAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil Lab Angle" );
+    sCRecLabAngleRB->SetName ( "Recoil Lab Angle RB SC" );
+    TGRadioButton* sCRecLabEnergyRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil Lab Energy" );
+    sCRecLabEnergyRB->SetName ( "Recoil Lab Energy RB SC" );
+    TGRadioButton* sCRecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil C.M. Angle" );
+    sCRecCMAngleRB->SetName ( "Recoil C.M. Angle RB SC" );
+
+    singleCalcLabelsSubFrame2->AddFrame ( sCRecLabAngleRB );
+    singleCalcLabelsSubFrame2->AddFrame ( sCRecLabEnergyRB );
+    singleCalcLabelsSubFrame2->AddFrame ( sCRecCMAngleRB );
+
+    singleCalcMainFrame->AddFrame ( singleCalcLabelsSubFrame2 );
+
+    TGCompositeFrame* singleCalcIFSubFrame2 = new TGCompositeFrame ( singleCalcMainFrame, 2000, 2000 );
+    singleCalcIFSubFrame2->SetName ( "Single Calculation IF Sub Frame 2" );
+    singleCalcIFSubFrame2->SetLayoutManager ( new TGColumnLayout ( singleCalcIFSubFrame2, 20 ) );
+
+    TGNumberEntryField* sCRecLabAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame2, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    sCRecLabAngleIF->SetName ( "Ejec. C.M. Angle IF SC" );
+    sCRecLabAngleIF->Resize ( sCRecLabAngleIF->GetDefaultSize() );
+    sCRecLabAngleIF->SetState ( kFALSE );
+    TGNumberEntryField* sCRecLabEnergyIF = new TGNumberEntryField ( singleCalcIFSubFrame2, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    sCRecLabEnergyIF->SetName ( "Recoil Lab Energy IF SC" );
+    sCRecLabEnergyIF->Resize ( sCRecLabEnergyIF->GetDefaultSize() );
+    sCRecLabEnergyIF->SetState ( kFALSE );
+    TGNumberEntryField* sCRecCMAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame2, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    sCRecCMAngleIF->SetName ( "Recoil C.M. Angle IF SC" );
+    sCRecCMAngleIF->Resize ( sCRecCMAngleIF->GetDefaultSize() );
+    sCRecCMAngleIF->SetState ( kFALSE );
+
+    singleCalcIFSubFrame2->AddFrame ( sCRecLabAngleIF );
+    singleCalcIFSubFrame2->AddFrame ( sCRecLabEnergyIF );
+    singleCalcIFSubFrame2->AddFrame ( sCRecCMAngleIF );
+
+    singleCalcMainFrame->AddFrame ( singleCalcIFSubFrame2 );
+
+    reacInfoFrame->AddFrame ( singleCalcMainFrame );
+
+    // ------ Wraping everything in the main frame ------ //
+
     mainIFFrame->AddFrame ( reacInfoFrame );
 
     controlFrame->AddFrame ( mainIFFrame, new TGLayoutHints ( kLHintsLeft, 20, 20, 20, 10 ) );
-
-    // ------ Wraping everything in the main frame ------ //
 
 //     controlFrame->ChangeSubframesBackground ( 0x4d004d );
 
@@ -567,6 +704,13 @@ int main ( int argc, char *argv[] )
 
     theApp->Run();
 }
+
+
+
+
+
+
+
 
 
 

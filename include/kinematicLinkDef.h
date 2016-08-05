@@ -7,6 +7,7 @@
 
 #pragma link C++ struct KinCalcRes+;
 
+#pragma link C++ class CalcMonitor+;
 #pragma link C++ class RootKinCalc+;
 
 #endif

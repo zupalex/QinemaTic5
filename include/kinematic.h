@@ -43,6 +43,28 @@ using std::string;
 #ifndef ROOTKINCALC_H
 #define ROOTKINCALC_H
 
+class CalcMonitor : public TObject, public TQObject
+{
+private:
+    CalcMonitor() {};
+
+    static CalcMonitor* s_instance;
+
+public:
+    ~CalcMonitor() {};
+
+    static CalcMonitor* CreateCalcMonitor();
+
+    static CalcMonitor* sinstance()
+    {
+        return s_instance;
+    }
+
+    static void OnClickSingleCalcRB();
+
+    ClassDef ( CalcMonitor, 1 );
+};
+
 class ReacInfo
 {
 private:
