@@ -575,6 +575,19 @@ void RootKinCalc::GetAtomicFormula ( std::ifstream& mass_db, int mass, int charg
     }
 }
 
+string RootKinCalc::GetAtomicFormula ( int mass, string element )
+{
+    string atomicFormula = "";
+    
+    if(element == "n") return "n";
+    else if(element == "H" && mass == 1) return "p";
+    else if(element == "H" && mass == 2) return "d";
+    else if(element == "H" && mass == 3) return "t";
+    else atomicFormula = Form("%i%s", mass, element.c_str());
+    
+    return atomicFormula;
+}
+
 void RootKinCalc::GetMassesForKinematic ( int charge, int mass, short memberID )
 {
     std::ifstream mass_db ( "./mass_db.dat" );
@@ -642,7 +655,7 @@ std::tuple<int, int> RootKinCalc::GetMassesForKinematic ( string particle, short
     return output;
 }
 
-void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_, float exEjec_, float exRecoil_ )
+void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_, float exEjec_, float exRecoil_, bool invertEjecRec, bool invertLabCMEn )
 {
     float dtr = TMath::DegToRad();
     float rtd = TMath::RadToDeg();
@@ -651,8 +664,19 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
 
     int zRecoil, aRecoil;
 
-    zRecoil = zBeam + zTarget - zEjec;
-    aRecoil = aBeam + aTarget - aEjec;
+    if ( !invertEjecRec )
+    {
+        zRecoil = zBeam + zTarget - zEjec;
+        aRecoil = aBeam + aTarget - aEjec;
+    }
+    else
+    {
+        zRecoil = zEjec;
+        aRecoil = aEjec;
+
+        zEjec = zBeam + zTarget - zRecoil;
+        aEjec = aBeam + aTarget - aRecoil;
+    }
 
     rInfo->ReinitMasses();
 
@@ -675,13 +699,6 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
     string ejecElement = ( zEjec == 0 ? "n" : ( ( zEjec == 1 && aEjec == 1 ) ? "p" : rInfo->atomicElement[2] ) );
     string recoilElement = ( zRecoil == 0 ? "n" : ( ( zRecoil == 1 && aRecoil == 1 ) ? "p" : rInfo->atomicElement[3] ) );
 
-    beamEkLab = beamEk_;
-    exEjec = exEjec_;
-    exRecoil = exRecoil_;
-
-    mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
-                    aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
-
     massBeam = rInfo->atomicMassUnit[0] * 1e-6 * amu; // MeV
     massTarget = rInfo->atomicMassUnit[1] * 1e-6 * amu; // MeV
     massEjec = rInfo->atomicMassUnit[2] * 1e-6 * amu + exEjec; // MeV
@@ -689,7 +706,22 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
 
     totMassInput = massBeam + massTarget;
 
-    beamEkCM = beamEkLab*massTarget / ( massBeam+massTarget );
+    if ( !invertLabCMEn )
+    {
+        beamEkLab = beamEk_;
+        beamEkCM = beamEkLab*massTarget / ( massBeam+massTarget );
+    }
+    else
+    {
+        beamEkCM = beamEk_;
+        beamEkLab = beamEkCM * ( massBeam+massTarget ) / massTarget;
+    }
+
+    exEjec = exEjec_;
+    exRecoil = exRecoil_;
+
+    mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
+                    aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
 
     betaC = TMath::Sqrt ( beamEkLab * ( beamEkLab + 2*massBeam ) ) / ( totMassInput + beamEkLab );
 
@@ -710,7 +742,7 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
     yNew = pow ( e3CM / massEjec, 2 ) * ( 1 - betaC * betaC );
 }
 
-void RootKinCalc::GetBaseKinematicInfo ( string beam, string target, string ejectile, float beamEk_, float exEjec_, float exRecoil_ )
+void RootKinCalc::GetBaseKinematicInfo ( string beam, string target, string ejectile, float beamEk_, float exEjec_, float exRecoil_, bool invertEjecRec, bool invertLabCMEn )
 {
     std::ifstream mass_db ( "./mass_db.dat" );
 
@@ -729,7 +761,7 @@ void RootKinCalc::GetBaseKinematicInfo ( string beam, string target, string ejec
     DecodeAtomicFormula ( mass_db, ejectile, aEjec, zEjec, 2 );
     mass_db.seekg ( 0 );
 
-    GetBaseKinematicInfo ( zBeam, aBeam, zTarget, aTarget, zEjec, aEjec, beamEk_, exEjec_, exRecoil_ );
+    GetBaseKinematicInfo ( zBeam, aBeam, zTarget, aTarget, zEjec, aEjec, beamEk_, exEjec_, exRecoil_, invertEjecRec, invertLabCMEn );
 }
 
 void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
@@ -1275,5 +1307,6 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     return;
 }
+
 
 

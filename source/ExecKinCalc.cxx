@@ -37,6 +37,94 @@ CalcMonitor* CalcMonitor::CreateCalcMonitor()
     return s_instance;
 }
 
+void CalcMonitor::OnClickBeamCMEnCB()
+{
+    TGCheckButton* clickedButton = ( TGCheckButton* ) gTQSender;
+
+    if ( clickedButton == NULL )
+    {
+        std::cerr << "Could not retreive the gTQSender...\n";
+
+        return;
+    }
+
+    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
+
+    if ( mw == NULL )
+    {
+        std::cerr << "Main Window not found!\n";
+
+        return;
+    }
+
+    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
+
+    if ( mf == NULL )
+    {
+        std::cerr << "Main Frame not found!\n";
+
+        return;
+    }
+
+    TGTextEntry* beamLabEkIF = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Beam Lab KE IF" ) );
+    TGTextEntry* beamCMEkIF = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Beam C.M. Energy IF" ) );
+
+    if ( clickedButton->GetState() == kTRUE )
+    {
+        beamCMEkIF->SetState ( kTRUE );
+        beamLabEkIF->SetState ( kFALSE );
+    }
+    else
+    {
+        beamCMEkIF->SetState ( kFALSE );
+        beamLabEkIF->SetState ( kTRUE );
+    }
+}
+
+void CalcMonitor::OnClickRecoilCB()
+{
+    TGCheckButton* clickedButton = ( TGCheckButton* ) gTQSender;
+
+    if ( clickedButton == NULL )
+    {
+        std::cerr << "Could not retreive the gTQSender...\n";
+
+        return;
+    }
+
+    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
+
+    if ( mw == NULL )
+    {
+        std::cerr << "Main Window not found!\n";
+
+        return;
+    }
+
+    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
+
+    if ( mf == NULL )
+    {
+        std::cerr << "Main Frame not found!\n";
+
+        return;
+    }
+
+    TGTextEntry* recoilIF = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Recoil Element IF" ) );
+    TGTextEntry* ejecIF = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Ejectile Element IF" ) );
+
+    if ( clickedButton->GetState() == kTRUE )
+    {
+        recoilIF->SetState ( kTRUE );
+        ejecIF->SetState ( kFALSE );
+    }
+    else
+    {
+        recoilIF->SetState ( kFALSE );
+        ejecIF->SetState ( kTRUE );
+    }
+}
+
 void CalcMonitor::OnClickSingleCalcRB()
 {
     TGRadioButton* clickedButton = ( TGRadioButton* ) gTQSender;
@@ -117,25 +205,6 @@ RootKinCalc* RootKinCalc::OnClickUpdateInfo()
         return nullptr;
     }
 
-    RootKinCalc* kinCalc = new RootKinCalc();
-
-    string beamStr, targetStr, ejecStr;
-
-    beamStr = beamElLabel->GetText();
-    targetStr = targetElLabel->GetText();
-    ejecStr = ejecElLabel->GetText();
-
-    if ( beamStr.empty() || targetStr.empty() || ejecStr.empty() ) return nullptr;
-
-    float beamEk;
-    float ejecEx, recEx;
-
-    beamEk = beamKeLabel->GetNumber();
-    ejecEx = ejecExLabel->GetNumber();
-    recEx = recoilExLabel->GetNumber();
-
-    kinCalc->GetBaseKinematicInfo ( beamStr, targetStr, ejecStr, beamEk, ejecEx, recEx );
-
     TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
 
     if ( mw == NULL )
@@ -154,13 +223,85 @@ RootKinCalc* RootKinCalc::OnClickUpdateInfo()
         return nullptr;
     }
 
+    RootKinCalc* kinCalc = new RootKinCalc();
+
+    string beamStr, targetStr, ejecStr;
+
+    beamStr = beamElLabel->GetText();
+    targetStr = targetElLabel->GetText();
+
+    TGCheckButton* recoilCB = dynamic_cast<TGCheckButton*> ( FindFrameByName ( mf, "Recoil Label CB" ) );
+
+    if ( recoilCB == NULL )
+    {
+        std::cerr << "Recoil Check Button not found!\n";
+
+        return nullptr;
+    }
+
+    bool invertEjecLabel = false;
+
+    if ( recoilCB->GetState() == kFALSE ) ejecStr = ejecElLabel->GetText();
+    else
+    {
+        ejecStr = recoilElLabel->GetText();
+        invertEjecLabel = true;
+    }
+
+    float beamEk;
+    float ejecEx, recEx;
+
+    TGCheckButton* beamCMKeCB = dynamic_cast<TGCheckButton*> ( FindFrameByName ( mf, "Beam C.M. Energy CB" ) );
+
+    if ( beamCMKeCB == NULL )
+    {
+        std::cerr << "Beam C.M. Ke Check Button not found!\n";
+
+        return nullptr;
+    }
+
+    bool invertBeamEkLabel = false;
+
+//     beamEk = beamKeLabel->GetNumber();
+
+    if ( beamCMKeCB->GetState() == kFALSE ) beamEk = beamKeLabel->GetNumber();
+    else
+    {
+        TGNumberEntryField* beamCMKeIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam C.M. Energy IF" ) );
+
+        if ( beamCMKeIF == NULL )
+        {
+            std::cerr << "Beam C.M. Ke IF not found!\n";
+
+            return nullptr;
+        }
+
+        beamEk = beamCMKeIF->GetNumber();
+        invertBeamEkLabel = true;
+    }
+
+    if ( beamStr.empty() || targetStr.empty() || ejecStr.empty() ) return nullptr;
+
+    ejecEx = ejecExLabel->GetNumber();
+    recEx = recoilExLabel->GetNumber();
+
+    kinCalc->GetBaseKinematicInfo ( beamStr, targetStr, ejecStr, beamEk, ejecEx, recEx, invertEjecLabel, invertBeamEkLabel );
+
+    TGTextEntry* ejecTE = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Ejectile Element IF" ) );
+
+    ejecTE->SetText ( GetAtomicFormula ( kinCalc->rInfo->A[2], kinCalc->rInfo->atomicElement[2] ).c_str() );
+
     TGTextEntry* recTE = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Recoil Element IF" ) );
 
-    recTE->SetText ( Form ( "%i%s", kinCalc->rInfo->A[3], kinCalc->rInfo->atomicElement[3].c_str() ) );
+    recTE->SetText ( GetAtomicFormula ( kinCalc->rInfo->A[3], kinCalc->rInfo->atomicElement[3] ).c_str() );
 
     TGNumberEntryField* bCMEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam C.M. Energy IF" ) );
 
     bCMEk->SetNumber ( kinCalc->beamEkCM );
+
+    TGNumberEntryField* bLabEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam Lab KE IF" ) );
+
+    bLabEk->SetNumber ( kinCalc->beamEkLab );
 
     TGNumberEntryField* thrIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Reaction Threshold IF" ) );
 
@@ -604,13 +745,23 @@ int main ( int argc, char *argv[] )
     TGLabel* beamLabel = new TGLabel ( reacLabelsFrame, "Beam:" );
     TGLabel* targetLabel = new TGLabel ( reacLabelsFrame, "Target:" );
     TGLabel* ejecLabel = new TGLabel ( reacLabelsFrame, "Ejectile:" );
-    TGLabel* recoilLabel = new TGLabel ( reacLabelsFrame, "Recoil:" );
+
+    TGCompositeFrame* recoilLabelSubFrame = new TGCompositeFrame ( reacLabelsFrame, 2000, 2000 );
+    recoilLabelSubFrame->SetName ( "Recoil Labels Sub Frame" );
+    recoilLabelSubFrame->SetLayoutManager ( new TGRowLayout ( recoilLabelSubFrame, 5 ) );
+    TGLabel* recoilLabel = new TGLabel ( recoilLabelSubFrame, "Recoil:" );
+    TGCheckButton* recoilLabelCB = new TGCheckButton ( recoilLabelSubFrame, "" );
+    recoilLabelCB->SetName ( "Recoil Label CB" );
+    TQObject::Connect ( recoilLabelCB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickRecoilCB()" );
+
+    recoilLabelSubFrame->AddFrame ( recoilLabel );
+    recoilLabelSubFrame->AddFrame ( recoilLabelCB );
 
     reacLabelsFrame->AddFrame ( emptyCell1 );
     reacLabelsFrame->AddFrame ( beamLabel );
     reacLabelsFrame->AddFrame ( targetLabel );
     reacLabelsFrame->AddFrame ( ejecLabel );
-    reacLabelsFrame->AddFrame ( recoilLabel );
+    reacLabelsFrame->AddFrame ( recoilLabelSubFrame );
 
     reacIFsFrame->AddFrame ( reacLabelsFrame );
 
@@ -647,6 +798,7 @@ int main ( int argc, char *argv[] )
 
     TGLabel* keLabel = new TGLabel ( keIFFrame, "    Kinetic Energy (MeV)" );
     beamKeLabel = new TGNumberEntryField ( keIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
+    beamKeLabel->SetName ( "Beam Lab KE IF" );
     beamKeLabel->SetNumber ( 0 );
 //     targetKeLabel = new TGNumberEntryField ( keIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
 //     ejecKeLabel = new TGNumberEntryField ( keIFFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
@@ -694,7 +846,17 @@ int main ( int argc, char *argv[] )
     threshInfoFrame->SetName ( "Reaction Threshold Info Frame" );
     threshInfoFrame->SetLayoutManager ( new TGRowLayout ( threshInfoFrame, 20 ) );
 
-    TGLabel* beamCMEnergyLabel = new TGLabel ( threshInfoFrame, "Beam C.M. Energy" );
+    TGCompositeFrame* beamCMEnergySubFrame = new TGCompositeFrame ( threshInfoFrame, 2000, 2000 );
+    beamCMEnergySubFrame->SetName ( "Beam CM Energy Label Sub Frame" );
+    beamCMEnergySubFrame->SetLayoutManager ( new TGRowLayout ( beamCMEnergySubFrame, 5 ) );
+    TGLabel* beamCMEnergyLabel = new TGLabel ( beamCMEnergySubFrame, "Beam C.M. Energy" );
+    TGCheckButton* beamCMEnLabelCB = new TGCheckButton ( beamCMEnergySubFrame, "" );
+    beamCMEnLabelCB->SetName ( "Beam C.M. Energy CB" );
+    TQObject::Connect ( beamCMEnLabelCB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickBeamCMEnCB()" );
+
+    beamCMEnergySubFrame->AddFrame ( beamCMEnergyLabel );
+    beamCMEnergySubFrame->AddFrame ( beamCMEnLabelCB );
+
     TGNumberEntryField* beamCMEnIF = new TGNumberEntryField ( threshInfoFrame, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
     beamCMEnIF->SetName ( "Beam C.M. Energy IF" );
     beamCMEnIF->Resize ( beamCMEnIF->GetDefaultSize() );
@@ -707,7 +869,7 @@ int main ( int argc, char *argv[] )
     threshInfoIF->Resize ( threshInfoIF->GetDefaultSize() );
     threshInfoIF->SetState ( kFALSE );
 
-    threshInfoFrame->AddFrame ( beamCMEnergyLabel );
+    threshInfoFrame->AddFrame ( beamCMEnergySubFrame );
     threshInfoFrame->AddFrame ( beamCMEnIF );
 
     threshInfoFrame->AddFrame ( threshInfoLabel );

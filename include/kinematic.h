@@ -61,6 +61,8 @@ public:
     }
 
     static void OnClickSingleCalcRB();
+    static void OnClickRecoilCB();
+    static void OnClickBeamCMEnCB();
 
     ClassDef ( CalcMonitor, 1 );
 };
@@ -164,7 +166,8 @@ public:
 
     void DecodeAtomicFormula ( std::ifstream& mass_db, string toDecode, int& mass, int& charge, short memberID );
     void GetAtomicFormula ( std::ifstream& mass_db, int mass, int charge, string& toReconstruct, short memberID );
-
+    static string GetAtomicFormula ( int mass, string element );
+    
     void GetRelevantInfoPositions ( string* readWord, short& posMassExcess, short& posBindingEnergy, short& posBetaDecay, short& posAMU, short& posElement );
 
     template<typename T2> inline int CheckForMatch ( string* readWord, short posMassExcess, short posBindingEnergy, short posBetaDecay, short posAMU, short posElement,
@@ -174,8 +177,9 @@ public:
 
     std::tuple<int, int> GetMassesForKinematic ( string particle, short memberID );
 
-    void GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_, float exEjec_ = 0.0, float exRecoil_ = 0.0 );
-    void GetBaseKinematicInfo ( string beam, string target, string ejectile, float beamEk_, float exEjec_ = 0.0, float exRecoil_ = 0.0 );
+    void GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_,
+                                float exEjec_ = 0.0, float exRecoil_ = 0.0, bool invertEjecRec = false, bool invertLabCMEn = false );
+    void GetBaseKinematicInfo ( string beam, string target, string ejectile, float beamEk_, float exEjec_ = 0.0, float exRecoil_ = 0.0, bool invertEjecRec = false, bool invertLabCMEn = false );
 
     void CalcKinematic ( float ejecLabAngle_ );
 
