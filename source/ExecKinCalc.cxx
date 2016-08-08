@@ -43,7 +43,7 @@ void CalcMonitor::OnClickSingleCalcRB()
 
     TGRadioButton* clickedButton = ( TGRadioButton* ) gTQSender; // gTQSender gives the current "sender".
 
-    std::cout << "Which one? -> " << clickedButton->GetName() << "\n";
+    std::cout<<clickedButton->GetName()<<std::endl;
 
     TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
 
@@ -63,9 +63,45 @@ void CalcMonitor::OnClickSingleCalcRB()
         return;
     }
 
-    TGRadioButton* ejecLabRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Angle RB SC" ) ); // Check from line 601 for the names of the other elements we want to interact with
-
-    if ( ejecLabRB != NULL ) std::cout << "We want to do something with the TGRadioButton named " << ejecLabRB->GetName() << "\n"; // Now let's get the other buttons and input fields and see what we should do
+    TGRadioButton* ejecLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Angle RB SC" ) ); // Check from line 601 for the names of the other elements we want to interact with
+    TGRadioButton* ejecLabEnergyRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Energy RB SC" ) );
+    TGRadioButton* ejecCMAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. C.M. Angle RB SC" ) );
+    TGRadioButton* recoilLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Angle RB SC" ) ); // Check from line 601 for the names of the other elements we want to interact with
+    TGRadioButton* recoilLabEnergyRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Energy RB SC" ) );
+    TGRadioButton* recoilCMAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil C.M. Angle RB SC" ) );
+    
+    if (clickedButton != NULL)
+    {
+      if (clickedButton != ejecLabAngleRB)
+      {
+	ejecLabAngleRB->SetState(kButtonUp, false);
+      }
+      
+      if (clickedButton != ejecLabEnergyRB)
+      {
+	ejecLabEnergyRB->SetState(kButtonUp, false);
+      }
+      
+     if (clickedButton != ejecCMAngleRB)
+      {
+	ejecCMAngleRB->SetState(kButtonUp, false);
+      }
+      if (clickedButton != recoilLabAngleRB)
+      {
+	recoilLabAngleRB->SetState(kButtonUp, false);
+      }
+      
+      if (clickedButton != recoilLabEnergyRB)
+      {
+	recoilLabEnergyRB->SetState(kButtonUp, false);
+      }
+      
+     if (clickedButton != recoilCMAngleRB)
+      {
+	recoilCMAngleRB->SetState(kButtonUp, false);
+      }
+    }
+  
 }
 
 ClassImp ( CalcMonitor );
@@ -611,11 +647,13 @@ int main ( int argc, char *argv[] )
     TGRadioButton* sCEjecLabAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. Lab Angle" );
     sCEjecLabAngleRB->SetName ( "Ejec. Lab Angle RB SC" );
     sCEjecLabAngleRB->SetState ( kButtonDown );
+    TQObject::Connect ( sCEjecLabAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
     TGRadioButton* esCEecLabEnergyRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. Lab Energy" );
     esCEecLabEnergyRB->SetName ( "Ejec. Lab Energy RB SC" );
     TQObject::Connect ( esCEecLabEnergyRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
     TGRadioButton* sCEjecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. C.M. Angle" );
     sCEjecCMAngleRB->SetName ( "Ejec. C.M. Angle RB SC" );
+    TQObject::Connect ( sCEjecCMAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
 
     singleCalcLabelsSubFrame1->AddFrame ( sCEjecLabAngleRB );
     singleCalcLabelsSubFrame1->AddFrame ( esCEecLabEnergyRB );
@@ -652,10 +690,13 @@ int main ( int argc, char *argv[] )
 
     TGRadioButton* sCRecLabAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil Lab Angle" );
     sCRecLabAngleRB->SetName ( "Recoil Lab Angle RB SC" );
+    TQObject::Connect ( sCRecLabAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
     TGRadioButton* sCRecLabEnergyRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil Lab Energy" );
     sCRecLabEnergyRB->SetName ( "Recoil Lab Energy RB SC" );
+    TQObject::Connect ( sCRecLabEnergyRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
     TGRadioButton* sCRecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil C.M. Angle" );
     sCRecCMAngleRB->SetName ( "Recoil C.M. Angle RB SC" );
+    TQObject::Connect ( sCRecCMAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
 
     singleCalcLabelsSubFrame2->AddFrame ( sCRecLabAngleRB );
     singleCalcLabelsSubFrame2->AddFrame ( sCRecLabEnergyRB );
