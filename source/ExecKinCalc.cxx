@@ -39,11 +39,14 @@ CalcMonitor* CalcMonitor::CreateCalcMonitor()
 
 void CalcMonitor::OnClickSingleCalcRB()
 {
-    std::cout << "A button has been Clicked!\n";
+    TGRadioButton* clickedButton = ( TGRadioButton* ) gTQSender;
 
-    TGRadioButton* clickedButton = ( TGRadioButton* ) gTQSender; // gTQSender gives the current "sender".
+    if ( clickedButton == NULL )
+    {
+        std::cerr << "Could not retreive the gTQSender...\n";
 
-    std::cout<<clickedButton->GetName()<<std::endl;
+        return;
+    }
 
     TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
 
@@ -63,45 +66,43 @@ void CalcMonitor::OnClickSingleCalcRB()
         return;
     }
 
-    TGRadioButton* ejecLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Angle RB SC" ) ); // Check from line 601 for the names of the other elements we want to interact with
+    std::map<TGRadioButton*, TGNumberEntryField*> sCMap;
+
+    TGRadioButton* ejecLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Angle RB SC" ) );
+    TGNumberEntryField* ejecLabAngleIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Ejec. Lab Angle IF SC" ) );
+    sCMap[ejecLabAngleRB] = ejecLabAngleIF;
+
     TGRadioButton* ejecLabEnergyRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Energy RB SC" ) );
-    TGRadioButton* ejecCMAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. C.M. Angle RB SC" ) );
-    TGRadioButton* recoilLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Angle RB SC" ) ); // Check from line 601 for the names of the other elements we want to interact with
+    TGNumberEntryField* ejecLabEnergyIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Ejec. Lab Energy IF SC" ) );
+    sCMap[ejecLabEnergyRB] = ejecLabEnergyIF;
+
+    TGRadioButton* ejecCMAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "C.M. Angle RB SC" ) );
+    TGNumberEntryField* ejecCMAngleIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "C.M. Angle IF SC" ) );
+    sCMap[ejecCMAngleRB] = ejecCMAngleIF;
+
+    TGRadioButton* recoilLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Angle RB SC" ) );
+    TGNumberEntryField* recoilLabAngleIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Recoil Lab Angle IF SC" ) );
+    sCMap[recoilLabAngleRB] = recoilLabAngleIF;
+
     TGRadioButton* recoilLabEnergyRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Energy RB SC" ) );
-    TGRadioButton* recoilCMAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil C.M. Angle RB SC" ) );
-    
-    if (clickedButton != NULL)
+    TGNumberEntryField* recoilLabEnergyIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Recoil Lab Energy IF SC" ) );
+    sCMap[recoilLabEnergyRB] = recoilLabEnergyIF;
+
+    for ( auto itr = sCMap.begin(); itr != sCMap.end(); itr++ )
     {
-      if (clickedButton != ejecLabAngleRB)
-      {
-	ejecLabAngleRB->SetState(kButtonUp, false);
-      }
-      
-      if (clickedButton != ejecLabEnergyRB)
-      {
-	ejecLabEnergyRB->SetState(kButtonUp, false);
-      }
-      
-     if (clickedButton != ejecCMAngleRB)
-      {
-	ejecCMAngleRB->SetState(kButtonUp, false);
-      }
-      if (clickedButton != recoilLabAngleRB)
-      {
-	recoilLabAngleRB->SetState(kButtonUp, false);
-      }
-      
-      if (clickedButton != recoilLabEnergyRB)
-      {
-	recoilLabEnergyRB->SetState(kButtonUp, false);
-      }
-      
-     if (clickedButton != recoilCMAngleRB)
-      {
-	recoilCMAngleRB->SetState(kButtonUp, false);
-      }
+        if ( itr->first != NULL && itr->second != NULL )
+        {
+            if ( itr->first != clickedButton )
+            {
+                itr->first->SetState ( kButtonUp, false );
+                itr->second->SetState ( kFALSE );
+            }
+            else
+            {
+                itr->second->SetState ( kTRUE );
+            }
+        }
     }
-  
 }
 
 ClassImp ( CalcMonitor );
@@ -286,6 +287,162 @@ void RootKinCalc::OnClickWriteTable()
     }
 }
 
+void RootKinCalc::OnClickProcessSC()
+{
+    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
+
+    if ( mw == NULL )
+    {
+        std::cerr << "Main Window not found!\n";
+
+        return;
+    }
+
+    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
+
+    if ( mf == NULL )
+    {
+        std::cerr << "Main Frame not found!\n";
+
+        return;
+    }
+
+    TList* selectedEntries = new TList();
+
+    TGListBox* reacFrame = dynamic_cast<TGListBox*> ( FindFrameByName ( mf, "Reactions ListBox" ) );
+
+    if ( reacFrame == NULL )
+    {
+        std::cerr << "Reaction ListBox not found!\n";
+
+        return;
+    }
+
+    reacFrame->GetSelectedEntries ( selectedEntries );
+
+    if ( selectedEntries->GetSize() != 1 )
+    {
+        std::cerr << "Please select the reaction you want to use for the calculation (only one reaction can be selected)\n";
+
+        return;
+    }
+
+    TIter selectedEntryItr ( selectedEntries );
+
+    selectedEntryItr.Next();
+
+    string reacTitle = ( ( TGLBEntry* ) *selectedEntryItr )->GetTitle();
+
+    auto found = kinResMap.find ( reacTitle );
+
+    int counter = -1;
+
+    for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
+    {
+        counter++;
+
+        if ( itr == found ) break;
+    }
+
+    if ( counter == kinResMap.size() )
+    {
+        std::cerr << "ERROR: selected reaction somehow not anymore in the reactions map !?\n";
+
+        return;
+    }
+
+    short reacID = counter;
+
+    std::map<TGRadioButton*, TGNumberEntryField*> sCMap;
+
+    TGRadioButton* ejecLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Angle RB SC" ) );
+    TGNumberEntryField* ejecLabAngleIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Ejec. Lab Angle IF SC" ) );
+    sCMap[ejecLabAngleRB] = ejecLabAngleIF;
+
+    TGRadioButton* ejecLabEnergyRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Ejec. Lab Energy RB SC" ) );
+    TGNumberEntryField* ejecLabEnergyIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Ejec. Lab Energy IF SC" ) );
+    sCMap[ejecLabEnergyRB] = ejecLabEnergyIF;
+
+    TGRadioButton* ejecCMAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "C.M. Angle RB SC" ) );
+    TGNumberEntryField* ejecCMAngleIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "C.M. Angle IF SC" ) );
+    sCMap[ejecCMAngleRB] = ejecCMAngleIF;
+
+    TGRadioButton* recoilLabAngleRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Angle RB SC" ) );
+    TGNumberEntryField* recoilLabAngleIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Recoil Lab Angle IF SC" ) );
+    sCMap[recoilLabAngleRB] = recoilLabAngleIF;
+
+    TGRadioButton* recoilLabEnergyRB = dynamic_cast<TGRadioButton*> ( FindFrameByName ( mf, "Recoil Lab Energy RB SC" ) );
+    TGNumberEntryField* recoilLabEnergyIF = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Recoil Lab Energy IF SC" ) );
+    sCMap[recoilLabEnergyRB] = recoilLabEnergyIF;
+
+    string refValStr = "";
+    float valToConvert = -1;
+
+    for ( auto itr = sCMap.begin(); itr != sCMap.end(); itr++ )
+    {
+        if ( itr->first != NULL && itr->second != NULL )
+        {
+            if ( itr->first->GetState() == kButtonDown )
+            {
+                refValStr = itr->first->GetName();
+
+//                 std::cout << "Raw Reference Value Name: " << refValStr << "\n";
+
+                size_t foundPosStr = refValStr.find ( "RB" );
+
+                refValStr = refValStr.substr ( 0, foundPosStr );
+
+                size_t foundLabStr = refValStr.find ( "Lab" );
+                size_t foundCMStr = refValStr.find ( "C.M." );
+
+                if ( foundLabStr != string::npos )
+                {
+                    refValStr.insert ( foundLabStr, " " );
+                    refValStr.insert ( foundLabStr+4, " " );
+                }
+                else if ( foundCMStr != string::npos )
+                {
+                    refValStr.insert ( foundCMStr+4, " " );
+                }
+
+//                 std::cout << "Extracted Reference Value Name: " << refValStr << "\n";
+
+                valToConvert =  itr->second->GetNumber();
+            }
+        }
+    }
+
+    for ( auto itr = sCMap.begin(); itr != sCMap.end(); itr++ )
+    {
+        if ( itr->first != NULL && itr->second != NULL )
+        {
+            if ( itr->first->GetState() == kButtonUp )
+            {
+                string convertValStr = itr->first->GetName();
+
+                size_t foundPosStr = convertValStr.find ( "RBSC" );
+
+                convertValStr = convertValStr.substr ( 0, foundPosStr );
+
+                size_t foundLabStr = convertValStr.find ( "Lab" );
+                size_t foundCMStr = convertValStr.find ( "C.M." );
+
+                if ( foundLabStr != string::npos )
+                {
+                    convertValStr.insert ( foundLabStr, " " );
+                    convertValStr.insert ( foundLabStr+4, " " );
+                }
+                else if ( foundCMStr != string::npos )
+                {
+                    convertValStr.insert ( foundCMStr+4, " " );
+                }
+
+                itr->second->SetNumber ( ConvertSingleValue ( reacID, refValStr, convertValStr, valToConvert ) );
+            }
+        }
+    }
+}
+
 int main ( int argc, char *argv[] )
 {
     // Create an interactive ROOT application
@@ -337,14 +494,12 @@ int main ( int argc, char *argv[] )
     ejecLabAngleCBX->SetState ( kButtonDown );
     TGRadioButton* ejecLabEnergyCBX = new TGRadioButton ( xAxisBG, "Ejec. Lab Energy" );
     ejecLabEnergyCBX->SetName ( "Ejec. Lab Energy CB X" );
-    TGRadioButton* ejecCMAngleCBX = new TGRadioButton ( xAxisBG, "Ejec. C.M. Angle" );
-    ejecCMAngleCBX->SetName ( "Ejec. C.M. Angle CB X" );
+    TGRadioButton* ejecCMAngleCBX = new TGRadioButton ( xAxisBG, "C.M. Angle" );
+    ejecCMAngleCBX->SetName ( "C.M. Angle CB X" );
     TGRadioButton* recLabAngleCBX = new TGRadioButton ( xAxisBG, "Recoil Lab Angle" );
     recLabAngleCBX->SetName ( "Recoil Lab Angle CB X" );
     TGRadioButton* recLabEnergyCBX = new TGRadioButton ( xAxisBG, "Recoil Lab Energy" );
     recLabEnergyCBX->SetName ( "Recoil Lab Energy CB X" );
-    TGRadioButton* recCMAngleCBX = new TGRadioButton ( xAxisBG, "Recoil C.M. Angle" );
-    recCMAngleCBX->SetName ( "Recoil C.M. Angle CB X" );
     xAxisBG->Show();
 
     TGButtonGroup* yAxisBG = new TGButtonGroup ( axisCBFrame, "Y Axis", kVerticalFrame );
@@ -354,14 +509,12 @@ int main ( int argc, char *argv[] )
     TGRadioButton* ejecLabEnergyCBY = new TGRadioButton ( yAxisBG, "Ejec. Lab Energy" );
     ejecLabEnergyCBY->SetName ( "Ejec. Lab Energy CB X" );
     ejecLabEnergyCBY->SetState ( kButtonDown );
-    TGRadioButton* ejecCMAngleCBY = new TGRadioButton ( yAxisBG, "Ejec. C.M. Angle" );
-    ejecCMAngleCBY->SetName ( "Ejec. C.M. Angle CB X" );
+    TGRadioButton* ejecCMAngleCBY = new TGRadioButton ( yAxisBG, "C.M. Angle" );
+    ejecCMAngleCBY->SetName ( "C.M. Angle CB X" );
     TGRadioButton* recLabAngleCBY = new TGRadioButton ( yAxisBG, "Recoil Lab Angle" );
     recLabAngleCBY->SetName ( "Recoil Lab Angle CB X" );
     TGRadioButton* recLabEnergyCBY = new TGRadioButton ( yAxisBG, "Recoil Lab Energy" );
     recLabEnergyCBY->SetName ( "Recoil Lab Energy CB X" );
-    TGRadioButton* recCMAngleCBY = new TGRadioButton ( yAxisBG, "Recoil C.M. Angle" );
-    recCMAngleCBY->SetName ( "Recoil C.M. Angle CB X" );
     yAxisBG->Show();
 
     axisCBFrame->AddFrame ( xAxisBG );
@@ -432,6 +585,10 @@ int main ( int argc, char *argv[] )
     TGCompositeFrame* reacInfoFrame = new TGCompositeFrame ( mainIFFrame, 2000, 2000 );
     reacInfoFrame->SetName ( "Reaction Info Frame" );
     reacInfoFrame->SetLayoutManager ( new TGColumnLayout ( reacInfoFrame, 26 ) );
+
+    TGLabel* rIMainLabel = new TGLabel ( reacInfoFrame, "------------------------------------ REACTION INFO ------------------------------------" );
+    rIMainLabel->SetTextFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    reacInfoFrame->AddFrame ( rIMainLabel );
 
     TGCompositeFrame* reacIFsFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
     reacIFsFrame->SetName ( "Reaction Input Fields Frame" );
@@ -579,6 +736,10 @@ int main ( int argc, char *argv[] )
 
     // ------ Adding the Table Output Menu ------ //
 
+    TGLabel* tOMainLabel = new TGLabel ( reacInfoFrame, "------------------------------------ TABLE OUTPUT ------------------------------------" );
+    tOMainLabel->SetTextFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    reacInfoFrame->AddFrame ( tOMainLabel );
+
     TGCompositeFrame* tableOutputMainFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
     tableOutputMainFrame->SetName ( "Table Output Main Frame" );
     tableOutputMainFrame->SetLayoutManager ( new TGRowLayout ( tableOutputMainFrame, 20 ) );
@@ -636,6 +797,10 @@ int main ( int argc, char *argv[] )
 
     // ------ Adding the Single Calculation Menu ------ //
 
+    TGLabel* sCMainLabel = new TGLabel ( reacInfoFrame, "------------------------------------ SINGLE VALUE CONVERSION ------------------------------------" );
+    sCMainLabel->SetTextFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    reacInfoFrame->AddFrame ( sCMainLabel );
+
     TGCompositeFrame* singleCalcMainFrame = new TGCompositeFrame ( reacInfoFrame, 2000, 2000 );
     singleCalcMainFrame->SetName ( "Single Calculation Main Frame" );
     singleCalcMainFrame->SetLayoutManager ( new TGRowLayout ( singleCalcMainFrame, 20 ) );
@@ -651,8 +816,8 @@ int main ( int argc, char *argv[] )
     TGRadioButton* esCEecLabEnergyRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. Lab Energy" );
     esCEecLabEnergyRB->SetName ( "Ejec. Lab Energy RB SC" );
     TQObject::Connect ( esCEecLabEnergyRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
-    TGRadioButton* sCEjecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "Ejec. C.M. Angle" );
-    sCEjecCMAngleRB->SetName ( "Ejec. C.M. Angle RB SC" );
+    TGRadioButton* sCEjecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame1, "C.M. Angle" );
+    sCEjecCMAngleRB->SetName ( "C.M. Angle RB SC" );
     TQObject::Connect ( sCEjecCMAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
 
     singleCalcLabelsSubFrame1->AddFrame ( sCEjecLabAngleRB );
@@ -669,12 +834,14 @@ int main ( int argc, char *argv[] )
     sCEjecLabAngleIF->SetName ( "Ejec. Lab Angle IF SC" );
     sCEjecLabAngleIF->Resize ( sCEjecLabAngleIF->GetDefaultSize() );
     sCEjecLabAngleIF->SetNumber ( 0 );
+
     TGNumberEntryField* esCEecLabEnergyIF = new TGNumberEntryField ( singleCalcIFSubFrame1, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
     esCEecLabEnergyIF->SetName ( "Ejec. Lab Energy IF SC" );
     esCEecLabEnergyIF->Resize ( esCEecLabEnergyIF->GetDefaultSize() );
     esCEecLabEnergyIF->SetState ( kFALSE );
+
     TGNumberEntryField* sCEjecCMAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame1, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
-    sCEjecCMAngleIF->SetName ( "Ejec. C.M. Angle IF SC" );
+    sCEjecCMAngleIF->SetName ( "C.M. Angle IF SC" );
     sCEjecCMAngleIF->Resize ( sCEjecCMAngleIF->GetDefaultSize() );
     sCEjecCMAngleIF->SetState ( kFALSE );
 
@@ -691,16 +858,13 @@ int main ( int argc, char *argv[] )
     TGRadioButton* sCRecLabAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil Lab Angle" );
     sCRecLabAngleRB->SetName ( "Recoil Lab Angle RB SC" );
     TQObject::Connect ( sCRecLabAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
+
     TGRadioButton* sCRecLabEnergyRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil Lab Energy" );
     sCRecLabEnergyRB->SetName ( "Recoil Lab Energy RB SC" );
     TQObject::Connect ( sCRecLabEnergyRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
-    TGRadioButton* sCRecCMAngleRB = new TGRadioButton ( singleCalcLabelsSubFrame2, "Recoil C.M. Angle" );
-    sCRecCMAngleRB->SetName ( "Recoil C.M. Angle RB SC" );
-    TQObject::Connect ( sCRecCMAngleRB, "Clicked()", "CalcMonitor", CalcMonitor::sinstance(), "OnClickSingleCalcRB()" );
 
     singleCalcLabelsSubFrame2->AddFrame ( sCRecLabAngleRB );
     singleCalcLabelsSubFrame2->AddFrame ( sCRecLabEnergyRB );
-    singleCalcLabelsSubFrame2->AddFrame ( sCRecCMAngleRB );
 
     singleCalcMainFrame->AddFrame ( singleCalcLabelsSubFrame2 );
 
@@ -709,25 +873,26 @@ int main ( int argc, char *argv[] )
     singleCalcIFSubFrame2->SetLayoutManager ( new TGColumnLayout ( singleCalcIFSubFrame2, 20 ) );
 
     TGNumberEntryField* sCRecLabAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame2, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
-    sCRecLabAngleIF->SetName ( "Ejec. C.M. Angle IF SC" );
+    sCRecLabAngleIF->SetName ( "Recoil Lab Angle IF SC" );
     sCRecLabAngleIF->Resize ( sCRecLabAngleIF->GetDefaultSize() );
     sCRecLabAngleIF->SetState ( kFALSE );
     TGNumberEntryField* sCRecLabEnergyIF = new TGNumberEntryField ( singleCalcIFSubFrame2, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
     sCRecLabEnergyIF->SetName ( "Recoil Lab Energy IF SC" );
     sCRecLabEnergyIF->Resize ( sCRecLabEnergyIF->GetDefaultSize() );
     sCRecLabEnergyIF->SetState ( kFALSE );
-    TGNumberEntryField* sCRecCMAngleIF = new TGNumberEntryField ( singleCalcIFSubFrame2, -1, 0, TGNumberFormat::kNESReal, TGNumberFormat::kNEAPositive );
-    sCRecCMAngleIF->SetName ( "Recoil C.M. Angle IF SC" );
-    sCRecCMAngleIF->Resize ( sCRecCMAngleIF->GetDefaultSize() );
-    sCRecCMAngleIF->SetState ( kFALSE );
 
     singleCalcIFSubFrame2->AddFrame ( sCRecLabAngleIF );
     singleCalcIFSubFrame2->AddFrame ( sCRecLabEnergyIF );
-    singleCalcIFSubFrame2->AddFrame ( sCRecCMAngleIF );
 
     singleCalcMainFrame->AddFrame ( singleCalcIFSubFrame2 );
 
     reacInfoFrame->AddFrame ( singleCalcMainFrame );
+
+    TGTextButton* processSCButton = new TGTextButton ( reacInfoFrame, "Process", "RootKinCalc::OnClickProcessSC()" );
+    processSCButton->SetFont ( "-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1" );
+    processSCButton->Resize ( processSCButton->GetDefaultSize() );
+
+    reacInfoFrame->AddFrame ( processSCButton );
 
     // ------ Wraping everything in the main frame ------ //
 

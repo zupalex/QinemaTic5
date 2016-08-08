@@ -105,7 +105,6 @@ struct KinCalcRes
     float ejecCMAngle;
     float recoilLabEnergy;
     float recoilLabAngle;
-    float recoilCMAngle;
 };
 
 class RootKinCalc
@@ -155,6 +154,7 @@ public:
     static void OnClickCalcKin();
     static void OnClickPlotGraphs();
     static void OnClickWriteTable();
+    static void OnClickProcessSC();
 
     static bool AssignLastUsedValues ( float zb_, float ab_, float zt_, float at_, float ze_, float ae_,
                                        string xAID_, string yAID_, float bek_,
@@ -185,8 +185,8 @@ public:
 
     static TGraph* PlotKinematicGraph ( string opt = "" );
 
-    float ConvertSingleValue ( short reactionID, string fromQuantity, string toQuantity, float val );
-    float ConvertSingleValue ( float val = -1 );
+    static float ConvertSingleValue ( short reactionID, string fromQuantity, string toQuantity, float val );
+    static float ConvertSingleValue ( float val = -1 );
 
     void Dump ( short reactionID, short entry );
 

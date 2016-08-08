@@ -89,9 +89,8 @@ float GetKinResIDValue ( KinCalcRes kcr, string ID )
 {
     if ( ID == "Ejec. Lab Angle" ) return kcr.ejecLabAngle;
     else if ( ID == "Ejec. Lab Energy" ) return kcr.ejecLabEnergy;
-    else if ( ID == "Ejec. C.M. Angle" ) return kcr.ejecCMAngle;
+    else if ( ID == "C.M. Angle" ) return kcr.ejecCMAngle;
     else if ( ID == "Recoil Lab Angle" ) return kcr.recoilLabAngle;
-    else if ( ID == "Recoil C.M. Angle" ) return kcr.recoilCMAngle;
     else if ( ID == "Recoil Lab Energy" ) return kcr.recoilLabEnergy;
     else return -1;
 }
@@ -100,10 +99,9 @@ string GetKinResIDString ( short ID )
 {
     if ( ID == 0 ) return "Ejec. Lab Angle";
     else if ( ID == 1 ) return "Ejec. Lab Energy";
-    else if ( ID == 2 ) return "Ejec. C.M. Angle";
+    else if ( ID == 2 ) return "C.M. Angle";
     else if ( ID == 3 ) return "Recoil Lab Angle";
-    else if ( ID == 4 ) return "Recoil C.M. Angle";
-    else if ( ID == 5 ) return "Recoil Lab Energy";
+    else if ( ID == 4 ) return "Recoil Lab Energy";
     else return "Invalid";
 }
 
@@ -760,6 +758,11 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
 
     kcr->ejecCMAngle = TMath::ACos ( ( kcr->b3L1 * kcr->cosagl - betaC ) / ( ( 1 - betaC * kcr->b3L1 * kcr->cosagl ) * beta3C ) ) * rtd;
 
+    kcr->recoilLabEnergy = beamEkLab + qValueFinal - kcr->ejecLabEnergy;
+
+    kcr->recoilLabAngle = ( TMath::ASin ( TMath::Sqrt ( ( kcr->ejecLabEnergy * ( kcr->ejecLabEnergy + 2*massEjec ) ) / ( kcr->recoilLabEnergy * ( kcr->recoilLabEnergy + 2*massRecoil ) ) )   *
+                                          TMath::Sin ( ejecLabAngle_ * dtr ) ) ) * rtd;
+
     return;
 }
 
@@ -1041,12 +1044,16 @@ float RootKinCalc::ConvertSingleValue ( short reactionID, string fromQuantity, s
 
     TGraph* tempGr = new TGraph ( reacItr->second.kinRes.size() );
 
-    for ( unsigned short i = 0; i < reacItr->second.kinRes.size(); i++ )
+    int counter = 0;
+
+    for ( auto itr = reacItr->second.kinRes.begin(); itr != reacItr->second.kinRes.end(); itr++ )
     {
-//         tempGr->SetPoint ( i, GetKinResIDValue ( &reacItr->second[i], fromQuantity ), GetKinResIDValue ( &reacItr->second[i], toQuantity ) );
+        tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, fromQuantity ), GetKinResIDValue ( itr->second, toQuantity ) );
+
+        counter++;
     }
 
-    std::cout << fromQuantity << ": " << val << "  <--->  " << tempGr->Eval ( val ) << " :" << toQuantity << "\n";
+//     std::cout << fromQuantity << ": " << val << "  <--->  " << tempGr->Eval ( val ) << " :" << toQuantity << "\n";
 
     return tempGr->Eval ( val );
 }
@@ -1233,8 +1240,10 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
 //     std::cout << "Preparing temp graphs...\n";
 
-    TGraph* aLabEjecVSaCMEjec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 2 ), xMin, xMax, precision, false );
+    TGraph* aLabEjecVSCMEjec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 2 ), xMin, xMax, precision, false );
     TGraph* aLabejecVSenLabEjec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 1 ), xMin, xMax, precision, false );
+    TGraph* aLabejecVSaLabRec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 3 ), xMin, xMax, precision, false );
+    TGraph* aLabejecVSenLabRec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 4 ), xMin, xMax, precision, false );
 
 //     std::cout << "Finished creating temp graphs...\n";
 
@@ -1248,7 +1257,7 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     outTable << grItr->first;
     outTable << "\n";
-    outTable << "Ejectile Lab Angle (deg.)    C.M. Angle (deg.)    Ejectile Lab Energy (" << unit << ")    Recoil Lab Angle (deg.)    Recoil C.M. Angle (deg.)    Recoil Lab Energy (" << unit << ")\n";
+    outTable << "Ejectile Lab Angle (deg.)    C.M. Angle (deg.)    Ejectile Lab Energy (" << unit << ")    Recoil Lab Angle (deg.)    Recoil Lab Energy (" << unit << ")\n";
 
     float x_ = xMin;
 
@@ -1256,10 +1265,9 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
     {
         outTable << x_ << "                         ";
         outTable << aLabejecVSenLabEjec->Eval ( x_ ) << "                         ";
-        outTable << aLabEjecVSaCMEjec->Eval ( x_ ) << "                         ";
-// 	outTable << grItr->second[i].recoilLabAngle << "                         ";
-// 	outTable << grItr->second[i].recoilCMAngle << "                         ";
-// 	outTable << grItr->second[i].recoilLabEnergy;
+        outTable << aLabEjecVSCMEjec->Eval ( x_ ) << "                         ";
+        outTable << aLabejecVSaLabRec->Eval ( x_ ) << "                         ";
+        outTable << aLabejecVSenLabRec->Eval ( x_ );
         outTable << "\n";
 
         x_ += precision;
