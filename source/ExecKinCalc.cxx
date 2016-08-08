@@ -288,18 +288,35 @@ RootKinCalc* RootKinCalc::OnClickUpdateInfo()
     kinCalc->GetBaseKinematicInfo ( beamStr, targetStr, ejecStr, beamEk, ejecEx, recEx, invertEjecLabel, invertBeamEkLabel );
 
     TGTextEntry* ejecTE = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Ejectile Element IF" ) );
+    TGTextEntry* recTE = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Recoil Element IF" ) );
+
+    TGNumberEntryField* bCMEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam C.M. Energy IF" ) );
+    TGNumberEntryField* bLabEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam Lab KE IF" ) );
+
+    if ( kinCalc->rInfo->A[2] < 1 || kinCalc->rInfo->A[3] < 1 || kinCalc->rInfo->Z[2] < 0 || kinCalc->rInfo->Z[3] < 0 || kinCalc->beamEkCM < 0 || kinCalc->beamEkLab < 0 )
+    {
+        std::cerr << "Invalid reaction...\n";
+
+        if ( kinCalc->rInfo->A[2] < 1 || kinCalc->rInfo->Z[2] < 0 || kinCalc->rInfo->A[3] < 1 || kinCalc->rInfo->Z[3] < 0 )
+        {
+            ejecTE->SetText ( "" );
+            recTE->SetText ( "" );
+        }
+
+        if ( kinCalc->beamEkCM < 0 || kinCalc->beamEkLab < 0 )
+        {
+            bCMEk->SetNumber ( 0 );
+            bLabEk->SetNumber ( 0 );
+        }
+
+        return nullptr;
+    }
 
     ejecTE->SetText ( GetAtomicFormula ( kinCalc->rInfo->A[2], kinCalc->rInfo->atomicElement[2] ).c_str() );
 
-    TGTextEntry* recTE = dynamic_cast<TGTextEntry*> ( FindFrameByName ( mf, "Recoil Element IF" ) );
-
     recTE->SetText ( GetAtomicFormula ( kinCalc->rInfo->A[3], kinCalc->rInfo->atomicElement[3] ).c_str() );
 
-    TGNumberEntryField* bCMEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam C.M. Energy IF" ) );
-
     bCMEk->SetNumber ( kinCalc->beamEkCM );
-
-    TGNumberEntryField* bLabEk = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Beam Lab KE IF" ) );
 
     bLabEk->SetNumber ( kinCalc->beamEkLab );
 
@@ -324,7 +341,8 @@ void RootKinCalc::OnClickCalcKin()
 {
     RootKinCalc* kinCalc = OnClickUpdateInfo();
 
-    kinCalc->GetReactionKinematic();
+    if ( kinCalc != NULL )
+        kinCalc->GetReactionKinematic();
 }
 
 void RootKinCalc::OnClickWriteTable()
@@ -578,7 +596,21 @@ void RootKinCalc::OnClickProcessSC()
                     convertValStr.insert ( foundCMStr+4, " " );
                 }
 
-                itr->second->SetNumber ( ConvertSingleValue ( reacID, refValStr, convertValStr, valToConvert ) );
+                float convertedVal = ConvertSingleValue ( reacID, refValStr, convertValStr, valToConvert );
+
+                if ( convertedVal < 0 )
+                {
+                    std::cerr << "Invalid input...\n";
+
+                    for ( auto itr2 = sCMap.begin(); itr2 != sCMap.end(); itr2++ )
+                    {
+                        itr2->second->SetNumber ( 0 );
+                    }
+
+                    return;
+                }
+
+                itr->second->SetNumber ( convertedVal );
             }
         }
     }
