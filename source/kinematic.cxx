@@ -578,13 +578,13 @@ void RootKinCalc::GetAtomicFormula ( std::ifstream& mass_db, int mass, int charg
 string RootKinCalc::GetAtomicFormula ( int mass, string element )
 {
     string atomicFormula = "";
-    
-    if(element == "n") return "n";
-    else if(element == "H" && mass == 1) return "p";
-    else if(element == "H" && mass == 2) return "d";
-    else if(element == "H" && mass == 3) return "t";
-    else atomicFormula = Form("%i%s", mass, element.c_str());
-    
+
+    if ( element == "n" ) return "n";
+    else if ( element == "H" && mass == 1 ) return "p";
+    else if ( element == "H" && mass == 2 ) return "d";
+    else if ( element == "H" && mass == 3 ) return "t";
+    else atomicFormula = Form ( "%i%s", mass, element.c_str() );
+
     return atomicFormula;
 }
 
@@ -784,16 +784,27 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
 
     kcr->d__2 = kcr->b * kcr->b - kcr->a * kcr->c;
 
-    kcr->b3L1 = ( -kcr->b + TMath::Sqrt ( kcr->d__2 ) ) / kcr->a;
+    if ( kcr->d__2 < 0 || kcr->a == 0 ) kcr->b3L1 = 1;
+    else kcr->b3L1 = ( -kcr->b + TMath::Sqrt ( kcr->d__2 ) ) / kcr->a;
 
-    kcr->ejecLabEnergy = massEjec * ( 1 / TMath::Sqrt ( 1 - kcr->b3L1 * kcr->b3L1 ) - 1 );
+    if ( 1 - kcr->b3L1 * kcr->b3L1  <= 0 || kcr->b3L1 < 0) kcr->ejecLabEnergy = -1000;
+    else kcr->ejecLabEnergy = massEjec * ( 1 / TMath::Sqrt ( 1 - kcr->b3L1 * kcr->b3L1 ) - 1 );
 
-    kcr->ejecCMAngle = TMath::ACos ( ( kcr->b3L1 * kcr->cosagl - betaC ) / ( ( 1 - betaC * kcr->b3L1 * kcr->cosagl ) * beta3C ) ) * rtd;
+    if ( kcr->ejecLabEnergy > 0 )
+    {
+        kcr->ejecCMAngle = TMath::ACos ( ( kcr->b3L1 * kcr->cosagl - betaC ) / ( ( 1 - betaC * kcr->b3L1 * kcr->cosagl ) * beta3C ) ) * rtd;
 
-    kcr->recoilLabEnergy = beamEkLab + qValueFinal - kcr->ejecLabEnergy;
+        kcr->recoilLabEnergy = beamEkLab + qValueFinal - kcr->ejecLabEnergy;
 
-    kcr->recoilLabAngle = ( TMath::ASin ( TMath::Sqrt ( ( kcr->ejecLabEnergy * ( kcr->ejecLabEnergy + 2*massEjec ) ) / ( kcr->recoilLabEnergy * ( kcr->recoilLabEnergy + 2*massRecoil ) ) )   *
-                                          TMath::Sin ( ejecLabAngle_ * dtr ) ) ) * rtd;
+        kcr->recoilLabAngle = ( TMath::ASin ( TMath::Sqrt ( ( kcr->ejecLabEnergy * ( kcr->ejecLabEnergy + 2*massEjec ) ) / ( kcr->recoilLabEnergy * ( kcr->recoilLabEnergy + 2*massRecoil ) ) )   *
+                                              TMath::Sin ( ejecLabAngle_ * dtr ) ) ) * rtd;
+    }
+    else
+    {
+        kcr->ejecCMAngle = -1000;
+        kcr->recoilLabEnergy = -1000;
+        kcr->recoilLabAngle = -1000;
+    }
 
     return;
 }
@@ -951,10 +962,12 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
     for ( auto itr = reacItr->second.kinRes.begin(); itr != reacItr->second.kinRes.end(); itr++ )
     {
 //         std::cout << GetKinResIDValue ( &reacItr->second[i], xAxisID ) << " <-> " << GetKinResIDValue ( &reacItr->second[i], yAxisID ) << "\n";
+        if ( GetKinResIDValue ( itr->second, xAxisID ) > 0 && GetKinResIDValue ( itr->second, yAxisID ) > 0 )
+        {
+            tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, xAxisID ), GetKinResIDValue ( itr->second, yAxisID ) );
 
-        tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, xAxisID ), GetKinResIDValue ( itr->second, yAxisID ) );
-
-        counter++;
+            counter++;
+        }
     }
 
     TGraph* gr = new TGraph ( ( int ) ( xMin - xMax ) / stepWidth );
@@ -965,10 +978,13 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
     {
 //         std::cout << x_ << " <-> " << tempGr->Eval ( x_ ) << "\n";
 
-        gr->SetPoint ( pointNum, x_, tempGr->Eval ( x_ ) );
+        if ( x_ > 0 && tempGr->Eval ( x_ ) > 0 )
+        {
+            gr->SetPoint ( pointNum, x_, tempGr->Eval ( x_ ) );
+            pointNum++;
+        }
 
         x_ += stepWidth;
-        pointNum++;
     }
 
     gr->SetTitle ( grTitle.c_str() );
