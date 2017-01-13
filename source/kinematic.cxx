@@ -787,7 +787,7 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
     if ( kcr->d__2 < 0 || kcr->a == 0 ) kcr->b3L1 = 1;
     else kcr->b3L1 = ( -kcr->b + TMath::Sqrt ( kcr->d__2 ) ) / kcr->a;
 
-    if ( 1 - kcr->b3L1 * kcr->b3L1  <= 0 || kcr->b3L1 < 0) kcr->ejecLabEnergy = -1000;
+    if ( 1 - kcr->b3L1 * kcr->b3L1  <= 0 || kcr->b3L1 < 0 ) kcr->ejecLabEnergy = -1000;
     else kcr->ejecLabEnergy = massEjec * ( 1 / TMath::Sqrt ( 1 - kcr->b3L1 * kcr->b3L1 ) - 1 );
 
     if ( kcr->ejecLabEnergy > 0 )
@@ -1304,21 +1304,21 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     outTable << grItr->first;
     outTable << "\n";
-    outTable << std::left << std::setw(29) << "Ejectile Lab Angle (deg.)";
-    outTable << std::left << std::setw(21) << "C.M. Angle (deg.)";
-    outTable << std::left << std::setw(21) << "Ejectile Lab Energy (" << unit << std::setw(5) << ")";
-    outTable << std::left << std::setw(27) << "Recoil Lab Angle (deg.)";
-    outTable << std::left << std::setw(20) << "Recoil Lab Energy (" << unit << ")\n";
+    outTable << std::left << std::setw ( 29 ) << "Ejectile Lab Angle (deg.)";
+    outTable << std::left << std::setw ( 21 ) << "Ejectile Lab Energy (" << unit << std::setw ( 5 ) << ")";
+    outTable << std::left << std::setw ( 21 ) << "C.M. Angle (deg.)";
+    outTable << std::left << std::setw ( 27 ) << "Recoil Lab Angle (deg.)";
+    outTable << std::left << std::setw ( 20 ) << "Recoil Lab Energy (" << unit << ")\n";
 
     float x_ = xMin;
 
     while ( x_ <= xMax )
     {
-        outTable << std::setw(29) << std::left << x_;
-        outTable << std::setw(21) << std::left << aLabejecVSenLabEjec->Eval ( x_ );
-        outTable << std::setw(29) << std::left << aLabEjecVSCMEjec->Eval ( x_ );
-        outTable << std::setw(27) << std::left << aLabejecVSaLabRec->Eval ( x_ );
-        outTable << std::setw(24) << std::left << aLabejecVSenLabRec->Eval ( x_ );
+        outTable << std::setw ( 29 ) << std::left << x_;
+        outTable << std::setw ( 29 ) << std::left << aLabejecVSenLabEjec->Eval ( x_ );
+        outTable << std::setw ( 21 ) << std::left << aLabEjecVSCMEjec->Eval ( x_ );
+        outTable << std::setw ( 27 ) << std::left << aLabejecVSaLabRec->Eval ( x_ );
+        outTable << std::setw ( 24 ) << std::left << aLabejecVSenLabRec->Eval ( x_ );
         outTable << "\n";
 
         x_ += precision;
