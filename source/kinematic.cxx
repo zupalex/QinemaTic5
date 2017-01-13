@@ -1231,7 +1231,6 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     string dummy, reaction, energy, unit;
 
-    grTitle >> dummy >> dummy >> dummy >> dummy >> dummy >> dummy;
     grTitle >> reaction >> energy >> unit;
 
     string outputName = grItr->first;
@@ -1305,17 +1304,21 @@ void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, f
 
     outTable << grItr->first;
     outTable << "\n";
-    outTable << "Ejectile Lab Angle (deg.)    C.M. Angle (deg.)    Ejectile Lab Energy (" << unit << ")    Recoil Lab Angle (deg.)    Recoil Lab Energy (" << unit << ")\n";
+    outTable << std::left << std::setw(29) << "Ejectile Lab Angle (deg.)";
+    outTable << std::left << std::setw(21) << "C.M. Angle (deg.)";
+    outTable << std::left << std::setw(21) << "Ejectile Lab Energy (" << unit << std::setw(5) << ")";
+    outTable << std::left << std::setw(27) << "Recoil Lab Angle (deg.)";
+    outTable << std::left << std::setw(20) << "Recoil Lab Energy (" << unit << ")\n";
 
     float x_ = xMin;
 
     while ( x_ <= xMax )
     {
-        outTable << x_ << "                         ";
-        outTable << aLabejecVSenLabEjec->Eval ( x_ ) << "                         ";
-        outTable << aLabEjecVSCMEjec->Eval ( x_ ) << "                         ";
-        outTable << aLabejecVSaLabRec->Eval ( x_ ) << "                         ";
-        outTable << aLabejecVSenLabRec->Eval ( x_ );
+        outTable << std::setw(29) << std::left << x_;
+        outTable << std::setw(21) << std::left << aLabejecVSenLabEjec->Eval ( x_ );
+        outTable << std::setw(29) << std::left << aLabEjecVSCMEjec->Eval ( x_ );
+        outTable << std::setw(27) << std::left << aLabejecVSaLabRec->Eval ( x_ );
+        outTable << std::setw(24) << std::left << aLabejecVSenLabRec->Eval ( x_ );
         outTable << "\n";
 
         x_ += precision;
