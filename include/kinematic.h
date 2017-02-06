@@ -16,30 +16,14 @@
 
 using namespace std;
 
-// #include "TROOT.h"
-// #include "TClass.h"
 #include "TMath.h"
 #include "TString.h"
 #include "TCanvas.h"
 #include "TGraph.h"
-// #include "THashList.h"
 #include "TAxis.h"
 #include "TLegend.h"
 #include "TFrame.h"
 #include "TMultiGraph.h"
-// #include "TGListBox.h"
-// #include "TGWindow.h"
-// #include "TGButton.h"
-// #include "TGFrame.h"
-// #include "TGClient.h"
-// #include "TGButtonGroup.h"
-// #include <TGLabel.h>
-// #include <TGLayout.h>
-// #include <TGDimension.h>
-// #include <TGText.h>
-// #include <TGTextEntry.h>
-// #include <TGNumberEntry.h>
-// #include "RQ_OBJECT.h"
 
 #ifndef ROOTKINCALC_H
 #define ROOTKINCALC_H
@@ -166,8 +150,6 @@ public:
 
     float ConvertSingleValue ( string fromQuantity, string toQuantity, float val );
 
-    void Dump ( short reactionID, short entry );
-
     static void WriteTableToFile ( short reactionID, float xMin, float xMax, float precision );
 };
 
@@ -248,7 +230,6 @@ template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, 
 }
 
 bool CharIsDigit ( char toCheck );
-void DisplayListOfReactions();
 float GetKinResIDValue ( KinCalcRes kcr, string ID );
 string GetKinResIDString ( short ID );
 

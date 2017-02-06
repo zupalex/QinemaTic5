@@ -43,6 +43,10 @@ int main ( int argc, char *argv[] )
 
     theApp.exec();
 
+    mainWindow.disconnect();
+    calcM->disconnect();
+    delete calcM;
+
     rootApp.Terminate();
 
     return 0;

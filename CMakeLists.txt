@@ -34,7 +34,7 @@ message(STATUS "ROOT Include Dir: ${ROOT_INCLUDE_DIR}")
 include_directories(${ROOT_INCLUDE_DIR})
 link_directories(${ROOT_LIBRARY_DIR})
 
-message(STATUS "If the build process failed to find the Qt5 packages, install \"qtbase5-dev\" package")
+message(STATUS "If the build process failed to find the Qt5 packages, install the Qt5 packages (e.g. \"qtbase5-dev\" for Ubuntu and Debian, \"qt5\" for Mac OSX, \"qt5-qtbase-devel\" on Fedora, ...)")
 
 message(STATUS "Finding Qt5 packages")
 find_package(Qt5Widgets REQUIRED)

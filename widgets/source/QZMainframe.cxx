@@ -83,8 +83,6 @@ QZMainFrame::QZMainFrame ( QWidget *parent ) :
 
     CreateDisplayWidget ( QString ( "Kinematics Graphs" ), 100, 100, 1024, 768 );
 
-    isRootProcessDone = false;
-
     invertEjecRecoil = false;
     invertLabCMEn = false;
 }
@@ -97,10 +95,11 @@ QZMainFrame::~QZMainFrame()
 void QZMainFrame::closeEvent ( QCloseEvent* event )
 {
     QWidget::closeEvent ( event );
+    emit BlockRootEventsProcessing();
 
     int counter = 0;
 
-    while ( !isRootProcessDone && counter < 6 )
+    while ( !isRootProcessDone && counter < 5 )
     {
         QTime dieTime= QTime::currentTime().addSecs ( 1 );
         while ( QTime::currentTime() < dieTime ) QCoreApplication::processEvents ( QEventLoop::AllEvents, 100 );
@@ -109,6 +108,12 @@ void QZMainFrame::closeEvent ( QCloseEvent* event )
     }
 
     displayWidget->GetRootTimer()->disconnect();
+    displayWidget->GetQRootCanvas()->disconnect();
+
+    displayWidget->disconnect();
+
+    delete displayWidget->GetRootTimer();
+    delete displayWidget->GetQRootCanvas()->GetTCanvas();
     delete displayWidget->GetQRootCanvas();
     delete displayWidget;
 
@@ -124,7 +129,14 @@ void QZMainFrame::CreateDisplayWidget ( QString title, int x, int y, int w, int 
     displayWidget->setGeometry ( x, y, w, h );
 //     displayWidget->show();
 
+    QObject::connect ( this, SIGNAL ( BlockRootEventsProcessing() ), displayWidget, SLOT ( BlockRootEventsProcessing() ) );
+    QObject::connect ( displayWidget, SIGNAL ( RootProcessingStarted() ), this, SLOT ( RootProcessingStarted() ) );
     QObject::connect ( displayWidget, SIGNAL ( RootProcessingDone() ), this, SLOT ( RootProccessingDone() ) );
+}
+
+void QZMainFrame::RootProcessingStarted()
+{
+    isRootProcessDone = false;
 }
 
 void QZMainFrame::RootProccessingDone()
@@ -612,7 +624,6 @@ QRootCanvas::QRootCanvas ( QWidget *parent ) : QWidget ( parent, 0 ), fCanvas ( 
     fCanvas->Update();
 }
 
-//______________________________________________________________________________
 void QRootCanvas::mouseMoveEvent ( QMouseEvent *e )
 {
 //     Handle mouse move events.
@@ -638,7 +649,6 @@ void QRootCanvas::mouseMoveEvent ( QMouseEvent *e )
     }
 }
 
-//______________________________________________________________________________
 void QRootCanvas::mousePressEvent ( QMouseEvent *e )
 {
 //     Handle mouse button press events.
@@ -665,7 +675,6 @@ void QRootCanvas::mousePressEvent ( QMouseEvent *e )
     }
 }
 
-//______________________________________________________________________________
 void QRootCanvas::mouseReleaseEvent ( QMouseEvent *e )
 {
 //     Handle mouse button release events.
@@ -692,7 +701,6 @@ void QRootCanvas::mouseReleaseEvent ( QMouseEvent *e )
     }
 }
 
-//______________________________________________________________________________
 void QRootCanvas::resizeEvent ( QResizeEvent * )
 {
 //     Handle resize events.
@@ -704,7 +712,6 @@ void QRootCanvas::resizeEvent ( QResizeEvent * )
     }
 }
 
-//______________________________________________________________________________
 void QRootCanvas::paintEvent ( QPaintEvent * )
 {
 //     Handle paint events.
@@ -718,7 +725,6 @@ void QRootCanvas::paintEvent ( QPaintEvent * )
 
 //------------------------------------------------------------------------------
 
-//______________________________________________________________________________
 QMainCanvas::QMainCanvas ( QWidget *parent ) : QWidget ( parent )
 {
     // QMainCanvas constructor.
@@ -728,18 +734,23 @@ QMainCanvas::QMainCanvas ( QWidget *parent ) : QWidget ( parent )
     fRootTimer = new QTimer ( this );
     QObject::connect ( fRootTimer, SIGNAL ( timeout() ), this, SLOT ( handle_root_events() ) );
     fRootTimer->start ( 20 );
+
+    blockProcessing = false;
 }
 
+void QMainCanvas::BlockRootEventsProcessing()
+{
+    blockProcessing = true;
+}
 
-//______________________________________________________________________________
 void QMainCanvas::handle_root_events()
 {
 //     call the inner loop of ROOT
-    gSystem->ProcessEvents();
+    emit RootProcessingStarted();
+    if ( !blockProcessing ) gSystem->ProcessEvents();
     emit RootProcessingDone();
 }
 
-//______________________________________________________________________________
 void QMainCanvas::changeEvent ( QEvent * e )
 {
     if ( e->type() == QEvent ::WindowStateChange )
@@ -758,6 +769,7 @@ void QMainCanvas::changeEvent ( QEvent * e )
         }
     }
 }
+
 
 
 #include "../include/moc_QZMainFrame.cpp"

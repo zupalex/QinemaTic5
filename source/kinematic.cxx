@@ -16,24 +16,6 @@ bool CharIsDigit ( char toCheck )
     else return false;
 }
 
-void DisplayListOfReactions()
-{
-//     if ( kinResMap.size() > 0 )
-//     {
-//         int counter = 0;
-//
-//         for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
-//         {
-//             std::cout << Form ( "[%d] %s",counter, itr->first.c_str() ) << "\n";
-//             counter++;
-//         }
-//     }
-//     else
-//     {
-//         std::cout << "No calculations were performed yet!\n";
-//     }
-}
-
 float GetKinResIDValue ( KinCalcRes kcr, string ID )
 {
     if ( ID == "Ejec. Lab. Angle" ) return kcr.ejecLabAngle;
@@ -748,77 +730,5 @@ float RootKinCalc::ConvertSingleValue ( string fromQuantity, string toQuantity, 
 //     std::cout << fromQuantity << ": " << val << "  <--->  " << tempGr->Eval ( val ) << " :" << toQuantity << "\n";
 
     return tempGr->Eval ( val );
-}
-
-void RootKinCalc::Dump ( short reactionID, short entry )
-{
-//     if ( reactionID >= kinResMap.size() ) return;
-//
-//     auto reacItr = kinResMap.begin();
-//
-//     std::advance ( reacItr, reactionID );
-//
-//     if ( entry >= reacItr->second.kinRes.size() ) return;
-//
-//     RootKinCalc toDump = reacItr->second;
-//
-//     std::cout << "********************************************\n";
-//     std::cout << "********************************************\n";
-
-//     std::cout << "Requested Beam Element: " << aBeam << atomicElement[0] << "\n";
-//     std::cout << "Mass Excess: " << massExcess[0] << " +/- " << deltaMassExcess[0] << " keV\n";
-//     std::cout << "Binding Energy per nucleon: " << bindEnPerA[0] << " +/- "  << deltaBetaDecayEn[0] << " keV\n";
-//     std::cout << "Beta Decay Energy: " << betaDecayEn[0] << " +/- "  << deltaBetaDecayEn[0] << " keV\n";
-//     std::cout << "Atomic Mass Unit: " << atomicMassUnit[0] << " micro-u\n";
-//     std::cout << "V/S: " << vOVERs[0] << "\n";
-//     std::cout << "-------------------------------------\n";
-//     std::cout << "Requested Target Element: " << aTarget << atomicElement[1] << "\n";
-//     std::cout << "Mass Excess: " << massExcess[1] << " +/- " << deltaMassExcess[1] << " keV\n";
-//     std::cout << "Binding Energy per nucleon: " << bindEnPerA[1] << " +/- "  << deltaBetaDecayEn[1] << " keV\n";
-//     std::cout << "Beta Decay Energy: " << betaDecayEn[1] << " +/- "  << deltaBetaDecayEn[1] << " keV\n";
-//     std::cout << "Atomic Mass Unit: " << atomicMassUnit[1] << " micro-u\n";
-//     std::cout << "V/S: " << vOVERs[1] << "\n";
-//     std::cout << "-------------------------------------\n";
-//     std::cout << "Requested Ejectile Element: " << aEjec << atomicElement[2] << "\n";
-//     std::cout << "Mass Excess: " << massExcess[2] << " +/- " << deltaMassExcess[2] << " keV\n";
-//     std::cout << "Binding Energy per nucleon: " << bindEnPerA[2] << " +/- "  << deltaBetaDecayEn[2] << " keV\n";
-//     std::cout << "Beta Decay Energy: " << betaDecayEn[2] << " +/- "  << deltaBetaDecayEn[2] << " keV\n";
-//     std::cout << "Atomic Mass Unit: " << atomicMassUnit[2] << " micro-u\n";
-//     std::cout << "V/S: " << vOVERs[2] << "\n";
-//     std::cout << "-------------------------------------\n";
-//     std::cout << "Computed Recoil Element: " << aRecoil << atomicElement[3] << "\n";
-//     std::cout << "Mass Excess: " << massExcess[3] << " +/- " << deltaMassExcess[3] << " keV\n";
-//     std::cout << "Binding Energy per nucleon: " << bindEnPerA[3] << " +/- "  << deltaBetaDecayEn[3] << " keV\n";
-//     std::cout << "Beta Decay Energy: " << betaDecayEn[3] << " +/- "  << deltaBetaDecayEn[3] << " keV\n";
-//     std::cout << "Atomic Mass Unit: " << atomicMassUnit[3] << " micro-u\n";
-//     std::cout << "V/S: " << vOVERs[3] << "\n";
-//     std::cout << "============================================\n";
-
-//     std::cout << "Dumping Calculations........\n";
-//     std::cout << "Mass of the beam: " << toDump.massBeam << " MeV\n";
-//     std::cout << "Mass of the target: " << toDump.massTarget << " MeV\n";
-//     std::cout << "Mass of the ejectile: " << toDump.massEjec << " MeV\n";
-//     std::cout << "Mass of the recoil: " << toDump.massRecoil << " MeV\n";
-//     std::cout << "Total mass: " << toDump.totMassInput << " MeV\n";
-//     std::cout << "Qvalue G.S: " << toDump.qValueGS << " MeV\n";
-//     std::cout << "Qvalue Final State: " << toDump.qValueFinal << " MeV\n";
-//     std::cout << "..........................\n";
-//     std::cout << "betaC: " << toDump.betaC << "\n";
-//     std::cout << "cosagl: " << toDump.cosagl << "\n";
-//     std::cout << "eCMi: " << toDump.eCMi << "\n";
-//     std::cout << "eCMf: " << toDump.eCMf << "\n";
-//     std::cout << "e3CM: " << toDump.e3CM << "\n";
-//     std::cout << "beta3C: " << toDump.beta3C << "\n";
-//     std::cout << "yNew: " << toDump.yNew << "\n";
-//     std::cout << "a: " << toDump.a << "\n";
-//     std::cout << "b: " << toDump.b << "\n";
-//     std::cout << "c: " << toDump.c << "\n";
-//     std::cout << "d**2: " << toDump.d__2 << "\n";
-//     std::cout << "b3L1: " << toDump.b3L1 << "\n";
-//     std::cout << "..........................\n";
-//     std::cout << "Ejectile Lab Energy @" << toDump.ejecLabAngle << " degrees: " << toDump.ejecLabEnergy << " MeV\n";
-//     std::cout << "C.M Angle: " << toDump.ejecCMAngle << " degrees\n";
-//     std::cout << "********************************************\n";
-//     std::cout << "********************************************\n";
 }
 

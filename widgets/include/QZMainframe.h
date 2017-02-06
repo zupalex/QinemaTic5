@@ -50,6 +50,8 @@ protected:
     QRootCanvas    *canvas;
     QTimer         *fRootTimer;
 
+    bool blockProcessing;
+
 public:
     QMainCanvas ( QWidget *parent = 0 );
     virtual ~QMainCanvas() {}
@@ -69,7 +71,11 @@ public slots:
     }
 
 signals:
+    void RootProcessingStarted();
     void RootProcessingDone();
+
+public slots:
+    void BlockRootEventsProcessing();
 };
 
 
@@ -128,8 +134,10 @@ public slots:
     void ResetDefaultValue();
 
     void RootProccessingDone();
+    void RootProcessingStarted();
 
 signals:
+    void BlockRootEventsProcessing();
     void KillApp();
 
     void RequestUpdateReac ( string beamStr, string targetStr, string ejecStr, string recoilStr,
