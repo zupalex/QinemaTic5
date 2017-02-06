@@ -9,57 +9,6 @@ float stepWidth_last;
 int quietMode_last;
 float exEjec_last, exRecoil_last;
 
-std::map<string, RootKinCalc> kinResMap;
-
-TGWindow* FindWindowByName ( std::string winName )
-{
-    std::string altName = winName;
-
-    while ( altName.find ( " " ) != std::string::npos )
-    {
-        altName = altName.replace ( altName.find ( " " ), 1, "" );
-    }
-
-    auto winList = gClient->GetListOfWindows();
-
-    for ( int i = 0; i < winList->GetSize(); i++ )
-    {
-        if ( winList->At ( i )->GetName() == winName || winList->At ( i )->GetName() == altName ) return ( TGWindow* ) winList->At ( i );
-    }
-
-    return nullptr;
-}
-
-TGFrame* FindFrameByName ( TGCompositeFrame* pFrame, std::string frameName )
-{
-//     std::cout << "Scanning Frame " << pFrame->GetName() << "\n";
-
-    std::string altName = frameName;
-
-    while ( altName.find ( " " ) != std::string::npos )
-    {
-        altName = altName.replace ( altName.find ( " " ), 1, "" );
-    }
-
-    TIter nFrame ( pFrame->GetList() );
-
-    TGFrameElement* frameEl;
-
-    while ( ( frameEl = ( TGFrameElement* ) nFrame() ) )
-    {
-        if ( frameEl->fFrame->GetName() == frameName || frameEl->fFrame->GetName() == altName ) return frameEl->fFrame;
-
-        if ( frameEl->fFrame->InheritsFrom ( TGCompositeFrame::Class() ) )
-        {
-            TGFrame* findInSubFrame = FindFrameByName ( ( TGCompositeFrame* ) frameEl->fFrame, frameName );
-
-            if ( findInSubFrame != NULL ) return findInSubFrame;
-        }
-    }
-
-    return nullptr;
-}
-
 bool CharIsDigit ( char toCheck )
 {
     if ( toCheck == '0' || toCheck == '1' || toCheck == '2' || toCheck == '3' || toCheck == '4' || toCheck == '5' || toCheck == '6' || toCheck == '7' || toCheck == '8' || toCheck == '9' )
@@ -69,235 +18,78 @@ bool CharIsDigit ( char toCheck )
 
 void DisplayListOfReactions()
 {
-    if ( kinResMap.size() > 0 )
-    {
-        int counter = 0;
-
-        for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
-        {
-            std::cout << Form ( "[%d] %s",counter, itr->first.c_str() ) << "\n";
-            counter++;
-        }
-    }
-    else
-    {
-        std::cout << "No calculations were performed yet!\n";
-    }
+//     if ( kinResMap.size() > 0 )
+//     {
+//         int counter = 0;
+//
+//         for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
+//         {
+//             std::cout << Form ( "[%d] %s",counter, itr->first.c_str() ) << "\n";
+//             counter++;
+//         }
+//     }
+//     else
+//     {
+//         std::cout << "No calculations were performed yet!\n";
+//     }
 }
 
 float GetKinResIDValue ( KinCalcRes kcr, string ID )
 {
-    if ( ID == "Ejec. Lab Angle" ) return kcr.ejecLabAngle;
-    else if ( ID == "Ejec. Lab Energy" ) return kcr.ejecLabEnergy;
+    if ( ID == "Ejec. Lab. Angle" ) return kcr.ejecLabAngle;
+    else if ( ID == "Ejec. Lab. Energy" ) return kcr.ejecLabEnergy;
     else if ( ID == "C.M. Angle" ) return kcr.ejecCMAngle;
-    else if ( ID == "Recoil Lab Angle" ) return kcr.recoilLabAngle;
-    else if ( ID == "Recoil Lab Energy" ) return kcr.recoilLabEnergy;
+    else if ( ID == "Recoil Lab. Angle" ) return kcr.recoilLabAngle;
+    else if ( ID == "Recoil Lab. Energy" ) return kcr.recoilLabEnergy;
     else return -1;
 }
 
 string GetKinResIDString ( short ID )
 {
-    if ( ID == 0 ) return "Ejec. Lab Angle";
-    else if ( ID == 1 ) return "Ejec. Lab Energy";
+    if ( ID == 0 ) return "Ejec. Lab. Angle";
+    else if ( ID == 1 ) return "Ejec. Lab. Energy";
     else if ( ID == 2 ) return "C.M. Angle";
-    else if ( ID == 3 ) return "Recoil Lab Angle";
-    else if ( ID == 4 ) return "Recoil Lab Energy";
+    else if ( ID == 3 ) return "Recoil Lab. Angle";
+    else if ( ID == 4 ) return "Recoil Lab. Energy";
     else return "Invalid";
-}
-
-void UpdateReactionListBox ( TGListBox* lb )
-{
-    lb->RemoveAll();
-
-    int ids = 0;
-
-    for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
-    {
-        lb->AddEntrySort ( itr->first.c_str(), ids );
-
-        ids++;
-    }
-
-//     lb->Resize ( 400, 150 );
-    lb->MapSubwindows();
-    lb->Layout();
 }
 
 ReacInfo::ReacInfo()
 {
-
+    mapKeys[0] = "beam";
+    mapKeys[1] = "target";
+    mapKeys[2] = "ejectile";
+    mapKeys[3] = "recoil";
 }
 
 void ReacInfo::ReinitMasses()
 {
+    string keys[4] = {"beam", "target", "ejectile", "recoil"};
+
     for ( short i = 0; i < 4; i++ )
     {
-        A[i] = 0;
-        Z[i] = 0;
-        massExcess[i] = 0.0;
-        deltaMassExcess[i] = 0.0;
-        bindEnPerA[i] = 0.0;
-        deltaBindEnPerA[i] = 0.0;
-        betaDecayEn[i] = 0.0;
-        deltaBetaDecayEn[i] = 0.0;
-        atomicMassUnit[i] = 0.0;
-        vOVERs[i] = 0.0;
-        atomicElement[i] = "";
+        A[keys[i]] = 0;
+        Z[keys[i]] = 0;
+        massExcess[keys[i]] = 0.0;
+        deltaMassExcess[keys[i]] = 0.0;
+        bindEnPerA[keys[i]] = 0.0;
+        deltaBindEnPerA[keys[i]] = 0.0;
+        betaDecayEn[keys[i]] = 0.0;
+        deltaBetaDecayEn[keys[i]] = 0.0;
+        atomicMassUnit[keys[i]] = 0.0;
+        vOVERs[keys[i]] = 0.0;
+        atomicElement[keys[i]] = "";
     }
+}
+
+string ReacInfo::GetKey ( int keyNum )
+{
+    return mapKeys[keyNum];
 }
 
 RootKinCalc::RootKinCalc()
 {
     rInfo = new ReacInfo();
-}
-
-void RootKinCalc::OnClickPlotGraphs()
-{
-    TList* selectedEntries = new TList();
-
-    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
-
-    if ( mw == NULL )
-    {
-        std::cerr << "Main Window not found!\n";
-
-        return;
-    }
-
-    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
-
-    if ( mf == NULL )
-    {
-        std::cerr << "Main Frame not found!\n";
-
-        return;
-    }
-
-    TGButtonGroup* xBG = dynamic_cast<TGButtonGroup*> ( FindFrameByName ( mf, "X Axis BG" ) );
-    TGButtonGroup* yBG = dynamic_cast<TGButtonGroup*> ( FindFrameByName ( mf, "Y Axis BG" ) );
-
-    if ( xBG == NULL )
-    {
-        std::cerr << "X Axis Button Group not found!\n";
-
-        return;
-    }
-
-    if ( yBG == NULL )
-    {
-        std::cerr << "Y Axis Button Group not found!\n";
-
-        return;
-    }
-
-    string xAxisID;
-    TIter xBGItr ( xBG->GetList() );
-
-    while ( xBGItr.Next() )
-    {
-        TGRadioButton* rb = ( ( TGRadioButton* ) ( ( TGFrameElement* ) *xBGItr )->fFrame );
-
-        if ( rb->GetState() )
-            xAxisID = ( ( TGRadioButton* ) ( ( TGFrameElement* ) *xBGItr )->fFrame )->GetString();
-    }
-
-    string yAxisID;
-    TIter yBGItr ( yBG->GetList() );
-
-    while ( yBGItr.Next() )
-    {
-        TGRadioButton* rb = ( ( TGRadioButton* ) ( ( TGFrameElement* ) *yBGItr )->fFrame );
-
-        if ( rb->GetState() )
-            yAxisID = ( ( TGRadioButton* ) ( ( TGFrameElement* ) *yBGItr )->fFrame )->GetString();
-    }
-
-    if ( xAxisID.empty() || yAxisID.empty() )
-    {
-        std::cerr << "Failed to read the axis IDs\n";
-
-        return;
-    }
-
-    TGNumberEntryField* xMinIF_ = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "X Min IF" ) );
-    TGNumberEntryField* xMaxIF_ = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "X Max IF" ) );
-    TGNumberEntryField* stepIF_ = dynamic_cast<TGNumberEntryField*> ( FindFrameByName ( mf, "Step Width IF" ) );
-
-    if ( xMinIF_ == NULL || xMaxIF_ == NULL || stepIF_ == NULL )
-    {
-        std::cerr << "Unabled to read the Axis range and step width\n";
-
-        return;
-    }
-
-    float xMin_, xMax_, stepWidth_;
-
-    xMin_ = xMinIF_->GetNumber();
-    xMax_ = xMaxIF_->GetNumber();
-    stepWidth_ = stepIF_->GetNumber();
-
-    if ( xMin_ >= xMax_ )
-    {
-        std::cerr << "X Min has to be bigger than X Max!\n";
-
-        return;
-    }
-
-    if ( xMax_ > 180 )
-    {
-        std::cerr << "X Max cannot be bigger than 180\n";
-
-        return;
-    }
-
-    if ( stepWidth_ <= 0 )
-    {
-        std::cerr << "The Step Width cannot be 0\n";
-
-        return;
-    }
-
-    TGListBox* reacFrame = dynamic_cast<TGListBox*> ( FindFrameByName ( mf, "Reactions ListBox" ) );
-
-    if ( reacFrame == NULL )
-    {
-        std::cerr << "Reaction ListBox not found!\n";
-
-        return;
-    }
-
-    reacFrame->GetSelectedEntries ( selectedEntries );
-
-    TIter selectedEntryItr ( selectedEntries );
-
-    while ( selectedEntryItr.Next() )
-    {
-        string reacTitle = ( ( TGLBEntry* ) *selectedEntryItr )->GetTitle();
-
-        auto found = kinResMap.find ( reacTitle );
-
-        int counter = -1;
-
-        for ( auto itr = kinResMap.begin(); itr != kinResMap.end(); itr++ )
-        {
-            counter++;
-
-            if ( itr == found ) break;
-        }
-
-        if ( counter == kinResMap.size() )
-        {
-            std::cerr << "ERROR: selected reaction somehow not anymore in the reactions map !?\n";
-
-            return;
-        }
-
-        short reacID = counter;
-
-// 	std::cout << reacID << "\n";
-
-        PlotKinematicGraph ( reacID, xAxisID, yAxisID, xMin_, xMax_, stepWidth_ );
-    }
 }
 
 bool RootKinCalc::AssignLastUsedValues ( float zb_, float ab_, float zt_, float at_, float ze_, float ae_,
@@ -657,6 +449,12 @@ std::tuple<int, int> RootKinCalc::GetMassesForKinematic ( string particle, short
 
 void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int aTarget, int zEjec, int aEjec, float beamEk_, float exEjec_, float exRecoil_, bool invertEjecRec, bool invertLabCMEn )
 {
+    if ( zBeam < 0 || aBeam <= 0 || zTarget < 0 || aTarget <= 0 || zEjec < 0 || aEjec <= 0 || beamEk_ < 0 || exEjec_ < 0 || exRecoil_ < 0 )
+    {
+        cerr << "Invalid Input...\n";
+        return;
+    }
+
     float dtr = TMath::DegToRad();
     float rtd = TMath::RadToDeg();
 
@@ -680,29 +478,29 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
 
     rInfo->ReinitMasses();
 
-    rInfo->A[0] = aBeam;
-    rInfo->A[1] = aTarget;
-    rInfo->A[2] = aEjec;
-    rInfo->A[3] = aRecoil;
-    rInfo->Z[0] = zBeam;
-    rInfo->Z[1] = zTarget;
-    rInfo->Z[2] = zEjec;
-    rInfo->Z[3] = zRecoil;
+    rInfo->A["beam"] = aBeam;
+    rInfo->A["target"] = aTarget;
+    rInfo->A["ejectile"] = aEjec;
+    rInfo->A["recoil"] = aRecoil;
+    rInfo->Z["beam"] = zBeam;
+    rInfo->Z["target"] = zTarget;
+    rInfo->Z["ejectile"] = zEjec;
+    rInfo->Z["recoil"] = zRecoil;
 
     GetMassesForKinematic ( zBeam, aBeam, 0 );
     GetMassesForKinematic ( zTarget, aTarget, 1 );
     GetMassesForKinematic ( zEjec, aEjec, 2 );
     GetMassesForKinematic ( zRecoil, aRecoil, 3 );
 
-    string beamElement = ( zBeam == 0 ? "n" : ( ( zBeam == 1 && aBeam == 1 ) ? "p" : rInfo->atomicElement[0] ) );
-    string targetElement = ( zTarget == 0 ? "n" : ( ( zTarget == 1 && aTarget == 1 ) ? "p" : rInfo->atomicElement[1] ) );
-    string ejecElement = ( zEjec == 0 ? "n" : ( ( zEjec == 1 && aEjec == 1 ) ? "p" : rInfo->atomicElement[2] ) );
-    string recoilElement = ( zRecoil == 0 ? "n" : ( ( zRecoil == 1 && aRecoil == 1 ) ? "p" : rInfo->atomicElement[3] ) );
+    string beamElement = ( zBeam == 0 ? "n" : ( ( zBeam == 1 && aBeam == 1 ) ? "p" : rInfo->atomicElement["beam"] ) );
+    string targetElement = ( zTarget == 0 ? "n" : ( ( zTarget == 1 && aTarget == 1 ) ? "p" : rInfo->atomicElement["target"] ) );
+    string ejecElement = ( zEjec == 0 ? "n" : ( ( zEjec == 1 && aEjec == 1 ) ? "p" : rInfo->atomicElement["ejectile"] ) );
+    string recoilElement = ( zRecoil == 0 ? "n" : ( ( zRecoil == 1 && aRecoil == 1 ) ? "p" : rInfo->atomicElement["recoil"] ) );
 
-    massBeam = rInfo->atomicMassUnit[0] * 1e-6 * amu; // MeV
-    massTarget = rInfo->atomicMassUnit[1] * 1e-6 * amu; // MeV
-    massEjec = rInfo->atomicMassUnit[2] * 1e-6 * amu + exEjec; // MeV
-    massRecoil = rInfo->atomicMassUnit[3] * 1e-6 * amu + exRecoil; // MeV
+    massBeam = rInfo->atomicMassUnit["beam"] * 1e-6 * amu; // MeV
+    massTarget = rInfo->atomicMassUnit["target"] * 1e-6 * amu; // MeV
+    massEjec = rInfo->atomicMassUnit["ejectile"] * 1e-6 * amu + exEjec; // MeV
+    massRecoil = rInfo->atomicMassUnit["recoil"] * 1e-6 * amu + exRecoil; // MeV
 
     totMassInput = massBeam + massTarget;
 
@@ -725,7 +523,7 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
 
     betaC = TMath::Sqrt ( beamEkLab * ( beamEkLab + 2*massBeam ) ) / ( totMassInput + beamEkLab );
 
-    qValueGS = ( rInfo->massExcess[0] + rInfo->massExcess[1] - rInfo->massExcess[2] - rInfo->massExcess[3] ) / 1000.;
+    qValueGS = ( rInfo->massExcess["beam"] + rInfo->massExcess["target"] - rInfo->massExcess["ejectile"] - rInfo->massExcess["recoil"] ) / 1000.;
     qValueFinal = qValueGS - exEjec - exRecoil;
 
     reacAboveThr = ( beamEkCM + qValueGS ) > 0;
@@ -809,85 +607,21 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
     return;
 }
 
-void RootKinCalc::GetReactionKinematic ( )
+TGraph* RootKinCalc::PlotKinematicGraph ( TCanvas* canvas, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw )
 {
-    float stepWidth = 0.1;
+    if(doDraw) canvas->cd();
 
-    if ( !reacAboveThr )
-    {
-        std::cout << "The reaction in below the threshold...\n";
-
-        return;
-    }
-
-    float labAngle = 0.0;
-
-    while ( labAngle <= 180.0 )
-    {
-        CalcKinematic ( labAngle );
-
-//         std::cout << kinResMap[mapKey][kinResMap[mapKey].size()-1].ejecLabAngle << " <-> " << kinResMap[mapKey][kinResMap[mapKey].size()-1].ejecLabEnergy << "\n";
-
-        labAngle += stepWidth;
-    }
-
-    kinResMap[mapKey] = *this;
-
-    TGWindow* mw = FindWindowByName ( "ROOT Kinematic Calculator" );
-
-    if ( mw == NULL )
-    {
-        std::cerr << "Main Window not found!\n";
-
-        return;
-    }
-
-    TGMainFrame* mf = ( TGMainFrame* ) mw->GetMainFrame();
-
-    if ( mf == NULL )
-    {
-        std::cerr << "Main Frame not found!\n";
-
-        return;
-    }
-
-    TGListBox* reacFrame = dynamic_cast<TGListBox*> ( FindFrameByName ( mf, "Reactions ListBox" ) );
-
-    if ( reacFrame == NULL )
-    {
-        std::cerr << "Reaction ListBox not found!\n";
-
-        return;
-    }
-
-    UpdateReactionListBox ( reacFrame );
-
-    return;
-}
-
-TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw )
-{
-    if ( reactionID >= kinResMap.size() ) return nullptr;
-
-    AssignLastUsedValues ( zBeam_last, aBeam_last, zTarget_last, aTarget_last, zEjec_last, aEjec_last, xAxisID, yAxisID, beamEk_last, xMin, xMax, stepWidth, quietMode_last, exEjec_last, exRecoil_last );
-
-    auto reacItr = kinResMap.begin();
-
-    std::advance ( reacItr, reactionID );
-
-    string grTitle = Form ( "%s vs. %s for %s", xAxisID.c_str(), yAxisID.c_str(), reacItr->first.c_str() );
+    string grTitle = Form ( "%s vs. %s for %s", xAxisID.c_str(), yAxisID.c_str(), mapKey.c_str() );
 
     if ( doDraw ) std::cout << "Plotting " << grTitle << " with steps of " << stepWidth << "...\n";
-
-    bool drawSame = false;
 
     std::vector<TGraph*> listOfGraphs;
 
     listOfGraphs.clear();
 
-    if ( doDraw && gPad != NULL )
+    if ( doDraw && canvas != NULL )
     {
-        auto lOK = gPad->GetCanvas()->GetListOfPrimitives();
+        auto lOK = canvas->GetListOfPrimitives();
 
         TMultiGraph* currentMG = new TMultiGraph();
 
@@ -914,52 +648,21 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
 
             string mgType = currentMG->GetTitle();
             mgType = mgType.substr ( 0, mgType.find ( " for" ) );
-
-//             if ( grTitle.substr ( 0, grTitle.find ( " for" ) ) == mgType )
-//             {
-//                 std::cout << "Do you want to draw the new graph on the same TCanvas ([1] yes / [0] no) ?";
-//                 std::cin >> drawSame;
-//             }
-//             else
-//             {
-//                 std::cout << "The current Canvas already contains different data. Replace it ([1] yes / [0] no) ?";
-//                 std::cin >> drawSame;
-//
-//                 if ( !drawSame ) return nullptr;
-//                 else drawSame = false;
-//             }
         }
         else if ( listOfGraphs.size() > 0 )
-//             if ( listOfGraphs.size() > 0 )
         {
             string grType = listOfGraphs[0]->GetTitle();
             grType = grType.substr ( 0, grType.find ( " for" ) );
-
-//             if ( grTitle.substr ( 0, grTitle.find ( " for" ) ) == grType )
-//             {
-//                 std::cout << "Do you want to draw the new graph on the same TCanvas ([1] yes / [0] no) ?";
-//                 std::cin >> drawSame;
-//             }
-//             else
-//             {
-//                 std::cout << "The current Canvas already contains different data. Replace it ([1] yes / [0] no) ?";
-//                 std::cin >> drawSame;
-//
-//                 if ( !drawSame ) return nullptr;
-//                 else drawSame = false;
-//             }
         }
     }
 
-    drawSame = true;
-
     float x_ = xMin;
 
-    TGraph* tempGr = new TGraph ( reacItr->second.kinRes.size() );
+    TGraph* tempGr = new TGraph ( kinRes.size() );
 
     int counter = 0;
 
-    for ( auto itr = reacItr->second.kinRes.begin(); itr != reacItr->second.kinRes.end(); itr++ )
+    for ( auto itr = kinRes.begin(); itr != kinRes.end(); itr++ )
     {
 //         std::cout << GetKinResIDValue ( &reacItr->second[i], xAxisID ) << " <-> " << GetKinResIDValue ( &reacItr->second[i], yAxisID ) << "\n";
         if ( GetKinResIDValue ( itr->second, xAxisID ) > 0 && GetKinResIDValue ( itr->second, yAxisID ) > 0 )
@@ -991,16 +694,7 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
 
     listOfGraphs.push_back ( gr );
 
-    if ( doDraw && !drawSame )
-    {
-        TCanvas* c = new TCanvas();
-
-        gr->Draw ( "ALP" );
-
-        c->Update();
-        c->ForceUpdate();
-    }
-    else if ( doDraw )
+    if ( doDraw )
     {
         TMultiGraph* mg = new TMultiGraph();
 
@@ -1031,70 +725,20 @@ TGraph* RootKinCalc::PlotKinematicGraph ( short reactionID, string xAxisID, stri
 
         legend->Draw();
 
-        gPad->GetCanvas()->Update();
-        gPad->GetCanvas()->ForceUpdate();
+        canvas->Modified();
+        canvas->Update();
     }
 
     return gr;
 }
 
-TGraph* RootKinCalc::PlotKinematicGraph ( string opt )
+float RootKinCalc::ConvertSingleValue ( string fromQuantity, string toQuantity, float val )
 {
-    short reactionID;
-    short xAxisIDNum, yAxisIDNum;
-    string xAxisID, yAxisID;
-    float xMin, xMax, stepWidth;
-
-    std::cout << "Which reaction do you want to use?\n";
-    DisplayListOfReactions();
-    std::cin >> reactionID;
-
-    if ( opt == "same" )
-    {
-        return PlotKinematicGraph ( reactionID, xAxisID_last, yAxisID_last, xMin_last, xMax_last, stepWidth_last );
-    }
-
-    std::cout << "\nWhat do you want to plot?\n";
-    std::cout << "-------------------------\n";
-    std::cout << "[0] Ejectile Lab Angle\n";
-    std::cout << "[1] Ejectile Lab Energy\n";
-    std::cout << "[2] Ejectile C.M. Angle\n";
-    std::cout << "[3] Recoil Lab Angle\n";
-    std::cout << "[4] Recoil C.M. Angle\n";
-    std::cout << "[5] Recoil Lab energy\n";
-    std::cout << "-------------------------\n";
-    std::cout << "On the X Axis? ";
-    std::cin >> xAxisIDNum;
-    std::cout << "On the Y Axis? ";
-    std::cin >> yAxisIDNum;
-    std::cout << "\nLower boundary for the X Axis? ";
-    std::cin >> xMin;
-    std::cout << "Upper boundary for the X Axis? ";
-    std::cin >> xMax;
-    std::cout << "Precision of the X Axis? ";
-    std::cin >> stepWidth;
-
-    xAxisID = GetKinResIDString ( xAxisIDNum );
-    yAxisID = GetKinResIDString ( yAxisIDNum );
-
-    return PlotKinematicGraph ( reactionID, xAxisID, yAxisID, xMin, xMax, stepWidth );
-}
-
-float RootKinCalc::ConvertSingleValue ( short reactionID, string fromQuantity, string toQuantity, float val )
-{
-    if ( reactionID >= kinResMap.size() ) return -1;
-
-    auto reacItr = kinResMap.begin();
-
-    std::advance ( reacItr, reactionID );
-
-    AssignLastUsedValues ( zBeam_last, aBeam_last, zTarget_last, aTarget_last, zEjec_last, aEjec_last, fromQuantity, toQuantity, beamEk_last, xMin_last, xMax_last, stepWidth_last, quietMode_last, exEjec_last, exRecoil_last );
-
-    TGraph* tempGr = new TGraph ( reacItr->second.kinRes.size() );
+    TGraph* tempGr = new TGraph ( kinRes.size() );
 
     int counter = 0;
 
-    for ( auto itr = reacItr->second.kinRes.begin(); itr != reacItr->second.kinRes.end(); itr++ )
+    for ( auto itr = kinRes.begin(); itr != kinRes.end(); itr++ )
     {
         tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, fromQuantity ), GetKinResIDValue ( itr->second, toQuantity ) );
 
@@ -1106,54 +750,21 @@ float RootKinCalc::ConvertSingleValue ( short reactionID, string fromQuantity, s
     return tempGr->Eval ( val );
 }
 
-float RootKinCalc::ConvertSingleValue ( float val )
-{
-    short reactionID;
-    short fQIDNum, tQIDNum;
-    string fQID, tQID;
-
-    std::cout << "Which reaction do you want to use?\n";
-    DisplayListOfReactions();
-    std::cin >> reactionID;
-
-    if ( val >= 0 ) return ConvertSingleValue ( reactionID, xAxisID_last, yAxisID_last, val );
-
-    std::cout << "\nWhat do you want to convert:\n";
-    std::cout << "-------------------------\n";
-    std::cout << "[0] Ejectile Lab Angle\n";
-    std::cout << "[1] Ejectile Lab Energy\n";
-    std::cout << "[2] Ejectile C.M. Angle\n";
-    std::cout << "[3] Recoil Lab Angle\n";
-    std::cout << "[4] Recoil C.M. Angle\n";
-    std::cout << "[5] Recoil Lab energy\n";
-    std::cout << "-------------------------\n";
-    std::cout << "From? ";
-    std::cin >> fQIDNum;
-    std::cout << "To? ";
-    std::cin >> tQIDNum;
-    std::cout << "Value to convert? ";
-    std::cin >> val;
-
-    fQID = GetKinResIDString ( fQIDNum );
-    tQID = GetKinResIDString ( tQIDNum );
-
-    return ConvertSingleValue ( reactionID, fQID, tQID, val );
-}
-
 void RootKinCalc::Dump ( short reactionID, short entry )
 {
-    if ( reactionID >= kinResMap.size() ) return;
+//     if ( reactionID >= kinResMap.size() ) return;
+//
+//     auto reacItr = kinResMap.begin();
+//
+//     std::advance ( reacItr, reactionID );
+//
+//     if ( entry >= reacItr->second.kinRes.size() ) return;
+//
+//     RootKinCalc toDump = reacItr->second;
+//
+//     std::cout << "********************************************\n";
+//     std::cout << "********************************************\n";
 
-    auto reacItr = kinResMap.begin();
-
-    std::advance ( reacItr, reactionID );
-
-    if ( entry >= reacItr->second.kinRes.size() ) return;
-
-    RootKinCalc toDump = reacItr->second;
-
-    std::cout << "********************************************\n";
-    std::cout << "********************************************\n";
 //     std::cout << "Requested Beam Element: " << aBeam << atomicElement[0] << "\n";
 //     std::cout << "Mass Excess: " << massExcess[0] << " +/- " << deltaMassExcess[0] << " keV\n";
 //     std::cout << "Binding Energy per nucleon: " << bindEnPerA[0] << " +/- "  << deltaBetaDecayEn[0] << " keV\n";
@@ -1210,122 +821,4 @@ void RootKinCalc::Dump ( short reactionID, short entry )
 //     std::cout << "********************************************\n";
 //     std::cout << "********************************************\n";
 }
-
-void RootKinCalc::WriteTableToFile ( short reactionID, float xMin, float xMax, float precision )
-{
-    if ( reactionID >= kinResMap.size() )
-    {
-        std::cerr << "Graph Number specified is incorrect!\n";
-        return;
-    }
-
-    auto grItr = kinResMap.begin();
-
-    std::advance ( grItr, reactionID );
-
-    std::stringstream grTitle;
-
-    grTitle.clear();
-
-    grTitle.str ( grItr->first );
-
-    string dummy, reaction, energy, unit;
-
-    grTitle >> reaction >> energy >> unit;
-
-    string outputName = grItr->first;
-
-    std::size_t foundPar1 = outputName.find ( "(" );
-    outputName.replace ( foundPar1, 1, "_" );
-
-    std::size_t foundPar2 = outputName.find ( ")" );
-    outputName.replace ( foundPar2, 1, "_" );
-
-    std::size_t foundComa = outputName.find ( "," );
-    outputName.replace ( foundComa, 1, "_" );
-
-    std::size_t foundUnit = outputName.find ( "eV" ) - 2;
-    outputName.replace ( foundUnit, 1, "" );
-
-    std::size_t foundAt = outputName.find ( "@" );
-    outputName.replace ( foundAt-1, 1, "" );
-
-    std::size_t foundPar3 = outputName.find ( "(" );
-    outputName.replace ( foundPar3-1, 2, "_" );
-
-    std::size_t foundPar4 = outputName.find ( ")" );
-    outputName.replace ( foundPar4, 1, "" );
-
-    std::size_t foundSlash = outputName.find ( "/" );
-    outputName.replace ( foundSlash-1, 3, "_" );
-
-    std::size_t foundEqual1 = outputName.find ( "=" );
-    outputName.replace ( foundEqual1-1, 3, "=" );
-
-    std::size_t foundEqual2 = outputName.find ( "=" );
-    foundEqual2 = outputName.find ( "=", foundEqual2+1 );
-    outputName.replace ( foundEqual2-1, 3, "=" );
-
-    std::size_t foundStar1 = outputName.find ( "*" );
-    outputName.replace ( foundStar1, 2, "xE" );
-
-    std::size_t foundStar2 = outputName.find ( "*" );
-    outputName.replace ( foundStar2, 2, "xR" );
-
-    struct stat checkDir;
-
-    stat ( "./tables/", &checkDir );
-
-    if ( ! ( checkDir.st_mode & S_IFDIR ) )
-    {
-        mkdir ( "./tables/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
-    }
-
-    outputName = "./tables/" + outputName + ".dat";
-
-    std::cout << "Writing table to file: " << outputName << "\n";
-
-//     std::cout << "Preparing temp graphs...\n";
-
-    TGraph* aLabEjecVSCMEjec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 2 ), xMin, xMax, precision, false );
-    TGraph* aLabejecVSenLabEjec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 1 ), xMin, xMax, precision, false );
-    TGraph* aLabejecVSaLabRec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 3 ), xMin, xMax, precision, false );
-    TGraph* aLabejecVSenLabRec = PlotKinematicGraph ( reactionID, GetKinResIDString ( 0 ), GetKinResIDString ( 4 ), xMin, xMax, precision, false );
-
-//     std::cout << "Finished creating temp graphs...\n";
-
-    std::ofstream outTable ( outputName.c_str() );
-
-    if ( !outTable.is_open() )
-    {
-        std::cerr << "Failed to open file " << outputName << "\n";
-        return;
-    }
-
-    outTable << grItr->first;
-    outTable << "\n";
-    outTable << std::left << std::setw ( 29 ) << "Ejectile Lab Angle (deg.)";
-    outTable << std::left << std::setw ( 21 ) << "Ejectile Lab Energy (" << unit << std::setw ( 5 ) << ")";
-    outTable << std::left << std::setw ( 21 ) << "C.M. Angle (deg.)";
-    outTable << std::left << std::setw ( 27 ) << "Recoil Lab Angle (deg.)";
-    outTable << std::left << std::setw ( 20 ) << "Recoil Lab Energy (" << unit << ")\n";
-
-    float x_ = xMin;
-
-    while ( x_ <= xMax )
-    {
-        outTable << std::setw ( 29 ) << std::left << x_;
-        outTable << std::setw ( 29 ) << std::left << aLabejecVSenLabEjec->Eval ( x_ );
-        outTable << std::setw ( 21 ) << std::left << aLabEjecVSCMEjec->Eval ( x_ );
-        outTable << std::setw ( 27 ) << std::left << aLabejecVSaLabRec->Eval ( x_ );
-        outTable << std::setw ( 24 ) << std::left << aLabejecVSenLabRec->Eval ( x_ );
-        outTable << "\n";
-
-        x_ += precision;
-    }
-
-    return;
-}
-
-
 

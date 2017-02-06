@@ -14,80 +14,60 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-using std::string;
+using namespace std;
 
-#include "TROOT.h"
-#include "TClass.h"
+// #include "TROOT.h"
+// #include "TClass.h"
 #include "TMath.h"
+#include "TString.h"
 #include "TCanvas.h"
 #include "TGraph.h"
-#include "THashList.h"
+// #include "THashList.h"
 #include "TAxis.h"
 #include "TLegend.h"
 #include "TFrame.h"
 #include "TMultiGraph.h"
-#include "TGListBox.h"
-#include "TGWindow.h"
-#include "TGButton.h"
-#include "TGFrame.h"
-#include "TGClient.h"
-#include "TGButtonGroup.h"
-#include <TGLabel.h>
-#include <TGLayout.h>
-#include <TGDimension.h>
-#include <TGText.h>
-#include <TGTextEntry.h>
-#include <TGNumberEntry.h>
-#include "RQ_OBJECT.h"
+// #include "TGListBox.h"
+// #include "TGWindow.h"
+// #include "TGButton.h"
+// #include "TGFrame.h"
+// #include "TGClient.h"
+// #include "TGButtonGroup.h"
+// #include <TGLabel.h>
+// #include <TGLayout.h>
+// #include <TGDimension.h>
+// #include <TGText.h>
+// #include <TGTextEntry.h>
+// #include <TGNumberEntry.h>
+// #include "RQ_OBJECT.h"
 
 #ifndef ROOTKINCALC_H
 #define ROOTKINCALC_H
 
-class CalcMonitor : public TObject, public TQObject
-{
-private:
-    CalcMonitor() {};
-
-    static CalcMonitor* s_instance;
-
-public:
-    ~CalcMonitor() {};
-
-    static CalcMonitor* CreateCalcMonitor();
-
-    static CalcMonitor* sinstance()
-    {
-        return s_instance;
-    }
-
-    static void OnClickSingleCalcRB();
-    static void OnClickRecoilCB();
-    static void OnClickBeamCMEnCB();
-
-    ClassDef ( CalcMonitor, 1 );
-};
-
 class ReacInfo
 {
 private:
+    string mapKeys[4];
 
 public:
     ReacInfo();
 
     ~ReacInfo() {}
 
-    //[0] == Beam, [1] == Target, [2] == Ejectile, [3] == Recoil
-    int A[4];
-    int Z[4];
-    float massExcess[4]; // keV
-    float deltaMassExcess[4]; // keV
-    float bindEnPerA[4]; // keV
-    float deltaBindEnPerA[4]; // keV
-    float betaDecayEn[4]; // keV
-    float deltaBetaDecayEn[4]; // keV
-    float atomicMassUnit[4]; // micro-u
-    float vOVERs[4];
-    string atomicElement[4];
+    string GetKey ( int keyNum );
+
+    //These maps are designed to hold 4 keys later on: "beam", "target", "ejectile" and "recoil"
+    map<string,int> A;
+    map<string,int> Z;
+    map<string,float> massExcess; // keV
+    map<string,float> deltaMassExcess; // keV
+    map<string,float> bindEnPerA; // keV
+    map<string,float> deltaBindEnPerA; // keV
+    map<string,float> betaDecayEn; // keV
+    map<string,float> deltaBetaDecayEn; // keV
+    map<string,float> atomicMassUnit; // micro-u
+    map<string,float> vOVERs;
+    map<string,string> atomicElement;
 
     void ReinitMasses();
 };
@@ -154,7 +134,6 @@ public:
 
     static RootKinCalc* OnClickUpdateInfo();
     static void OnClickCalcKin();
-    static void OnClickPlotGraphs();
     static void OnClickWriteTable();
     static void OnClickProcessSC();
 
@@ -167,7 +146,7 @@ public:
     void DecodeAtomicFormula ( std::ifstream& mass_db, string toDecode, int& mass, int& charge, short memberID );
     void GetAtomicFormula ( std::ifstream& mass_db, int mass, int charge, string& toReconstruct, short memberID );
     static string GetAtomicFormula ( int mass, string element );
-    
+
     void GetRelevantInfoPositions ( string* readWord, short& posMassExcess, short& posBindingEnergy, short& posBetaDecay, short& posAMU, short& posElement );
 
     template<typename T2> inline int CheckForMatch ( string* readWord, short posMassExcess, short posBindingEnergy, short posBetaDecay, short posAMU, short posElement,
@@ -183,20 +162,13 @@ public:
 
     void CalcKinematic ( float ejecLabAngle_ );
 
-    void GetReactionKinematic ( );
+    TGraph* PlotKinematicGraph ( TCanvas* canvas, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw = true );
 
-    static TGraph* PlotKinematicGraph ( short reactionID, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw = true );
-
-    static TGraph* PlotKinematicGraph ( string opt = "" );
-
-    static float ConvertSingleValue ( short reactionID, string fromQuantity, string toQuantity, float val );
-    static float ConvertSingleValue ( float val = -1 );
+    float ConvertSingleValue ( string fromQuantity, string toQuantity, float val );
 
     void Dump ( short reactionID, short entry );
 
     static void WriteTableToFile ( short reactionID, float xMin, float xMax, float precision );
-
-    ClassDef ( RootKinCalc, 1 );
 };
 
 template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, short posMassExcess, short posBindingEnergy, short posBetaDecay, short posAMU, short posElement,
@@ -234,23 +206,25 @@ template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, 
 
 //         std::cout << "Decoded charge: " << charge << " ...\n";
 
+        string rMapKey = rInfo->GetKey ( foundMatch );
+
         if ( posMassExcess >= 5 )
         {
-            rInfo->massExcess[foundMatch] = std::stof ( readWord[posMassExcess] );
-            rInfo->deltaMassExcess[foundMatch] = std::stof ( readWord[posMassExcess+1] );
-// 	    std::cout << "Decoded Mass Excess: " << rInfo->massExcess[foundMatch] << " +/- " << rInfo->deltaMassExcess[foundMatch] << " ...\n";
+            rInfo->massExcess[rMapKey] = std::stof ( readWord[posMassExcess] );
+            rInfo->deltaMassExcess[rMapKey] = std::stof ( readWord[posMassExcess+1] );
+// 	    std::cout << "Decoded Mass Excess: " << rInfo->massExcess[rMapKey] << " +/- " << rInfo->deltaMassExcess[rMapKey] << " ...\n";
         }
         if ( posBindingEnergy >= 7 )
         {
 //             std::cout << "Decoded Binding Energy: " << std::stof ( readWord[posBindingEnergy] ) << " +/- " << std::stof ( readWord[posBindingEnergy+1] ) << " ...\n";
-            rInfo->bindEnPerA[foundMatch] = std::stof ( readWord[posBindingEnergy] );
-            rInfo->deltaBindEnPerA[foundMatch] = std::stof ( readWord[posBindingEnergy+1] );
+            rInfo->bindEnPerA[rMapKey] = std::stof ( readWord[posBindingEnergy] );
+            rInfo->deltaBindEnPerA[rMapKey] = std::stof ( readWord[posBindingEnergy+1] );
         }
         if ( posBetaDecay >= 10 )
         {
 //             std::cout << "Decoded Beta Decay: " << std::stof ( readWord[posBetaDecay] ) << " +/- " << std::stof ( readWord[posBetaDecay+1] ) << " ...\n";
-            rInfo->betaDecayEn[foundMatch] = std::stof ( readWord[posBetaDecay] );
-            rInfo->deltaBetaDecayEn[foundMatch] = std::stof ( readWord[posBetaDecay+1] );
+            rInfo->betaDecayEn[rMapKey] = std::stof ( readWord[posBetaDecay] );
+            rInfo->deltaBetaDecayEn[rMapKey] = std::stof ( readWord[posBetaDecay+1] );
         }
         if ( posAMU >= 11 )
         {
@@ -261,28 +235,21 @@ template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, 
             mainVal = std::stof ( readWord[posAMU] );
             decVal = std::stof ( readWord[posAMU+1] );
 
-            rInfo->atomicMassUnit[foundMatch] = mainVal*1e6 + decVal;
-            rInfo->vOVERs[foundMatch] = std::stof ( readWord[posAMU+2] );
+            rInfo->atomicMassUnit[rMapKey] = mainVal*1e6 + decVal;
+            rInfo->vOVERs[rMapKey] = std::stof ( readWord[posAMU+2] );
         }
 
 //         std::cout << "Decoded Element: " << readWord[posElement] << " ...\n";
 
-        rInfo->atomicElement[foundMatch] = readWord[posElement];
+        rInfo->atomicElement[rMapKey] = readWord[posElement];
     }
 
     return charge;
 }
 
-extern std::map<string, RootKinCalc> kinResMap;
-
-TGWindow* FindWindowByName ( std::string winName );
-TGFrame* FindFrameByName ( TGCompositeFrame* pFrame, std::string frameName );
-
 bool CharIsDigit ( char toCheck );
 void DisplayListOfReactions();
 float GetKinResIDValue ( KinCalcRes kcr, string ID );
 string GetKinResIDString ( short ID );
-
-void UpdateReactionListBox ( TGListBox* lb );
 
 #endif
