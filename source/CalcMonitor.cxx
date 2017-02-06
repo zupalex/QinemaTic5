@@ -1,5 +1,7 @@
 #include "CalcMonitor.h"
 
+CalcMonitor* CalcMonitor::s_instance = nullptr;
+
 CalcMonitor* CalcMonitor::CreateCalcMonitor ()
 {
     if ( s_instance == NULL )

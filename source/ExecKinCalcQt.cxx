@@ -4,8 +4,6 @@
 #include <TApplication.h>
 #include <TSystem.h>
 
-CalcMonitor* CalcMonitor::s_instance = nullptr;
-
 int main ( int argc, char *argv[] )
 {
     TApplication rootApp ( "Simple Qt ROOT Application", &argc, argv );
