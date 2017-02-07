@@ -23,13 +23,11 @@
 #include <list>
 #include <functional>
 
-#include "TROOT.h"
-#include "TSystem.h"
-#include "TMath.h"
-
 #include <QtWidgets/QToolButton>
 
+#include "qcustomplot.h"
 #include "QZMainframe.h"
+#include "QZPlotwidget.h"
 #include "kinematic.h"
 #include "CalcMonitor.h"
 

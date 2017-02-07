@@ -1,0 +1,90 @@
+#ifndef QZPLOTWIDGET_H
+#define QZPLOTWIDGET_H
+
+#include<map>
+
+#include <QWidget>
+#include <QtGui/QResizeEvent>
+#include "qcustomplot.h"
+
+using namespace std;
+
+class ForwardMouseTracking : public QObject
+{
+    Q_OBJECT
+
+private:
+
+protected:
+    bool eventFilter ( QObject* obj, QEvent* event );
+
+public:
+    ForwardMouseTracking() {}
+    ~ForwardMouseTracking() {}
+};
+
+namespace Ui
+{
+class QZPlotwidget;
+}
+
+class QZPlotwidget : public QWidget
+{
+    Q_OBJECT
+
+private:
+    Ui::QZPlotwidget *ui;
+
+    map<QString, QSize> standardSizes;
+
+    void RegisterStandardSizes();
+    ForwardMouseTracking* fMt;
+
+protected:
+    void MakeColorPalette();
+    virtual void resizeEvent ( QResizeEvent* event );
+
+public:
+    explicit QZPlotwidget ( QWidget *parent = 0 );
+    ~QZPlotwidget();
+
+    QCustomPlot* GetQCustomPlot()
+    {
+        return findChild<QCustomPlot*> ( "customPlot" );
+    }
+
+    double origXMin;
+    double origXMax;
+    double origYMin;
+    double origYMax;
+
+    double xAxisMin;
+    double xAxisMax;
+
+    double yAxisMax;
+    double yAxisMin;
+
+    QColor colorPalette[10];
+
+signals:
+
+public slots:
+    void AddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
+
+    void ToogleLogScale ( int isOn );
+    void ToogleAllowDrag ( int isOn );
+    void ToogleAllowDragX ( int isOn );
+    void ToogleAllowDragY ( int isOn );
+
+    void RecenterAxis();
+
+    void RescaleXAxis();
+    void RescaleYAxis();
+
+    void UpdateXAxisRangeBoxes ( const QCPRange& newRange );
+    void UpdateYAxisRangeBoxes ( const QCPRange& newRange );
+};
+
+QWidget* GetFirstParent ( QWidget* widget );
+
+#endif // QZPLOTWIDGET_H

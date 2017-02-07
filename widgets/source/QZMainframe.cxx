@@ -6,15 +6,6 @@
 #include <QMouseEvent>
 #include <QMessageBox>
 
-#include <TCanvas.h>
-#include <TVirtualX.h>
-#include <TSystem.h>
-#include <TFormula.h>
-#include <TF1.h>
-#include <TH1.h>
-#include <TFrame.h>
-#include <TTimer.h>
-
 #include "QZMainframe.h"
 #include "ui_QZMainframe.h"
 
@@ -81,7 +72,7 @@ QZMainFrame::QZMainFrame ( QWidget *parent ) :
 
     RegisterChildrenDefaultValues();
 
-    CreateDisplayWidget ( QString ( "Kinematics Graphs" ), 100, 100, 1024, 768 );
+    CreateDisplayWidget ();
 
     invertEjecRecoil = false;
     invertLabCMEn = false;
@@ -92,56 +83,46 @@ QZMainFrame::~QZMainFrame()
     delete ui;
 }
 
+void QZMainFrame::RedrawPlotWidget ( string plotTitle )
+{
+    if ( displayWidget == nullptr ) CreateDisplayWidget();
+
+    displayWidget->GetQCustomPlot()->clearGraphs();
+
+    displayWidget->yAxisMin = -666.666;
+    displayWidget->yAxisMax = -666.666;
+
+    displayWidget->findChild<QLabel*> ( "plotTitle" )->setText ( QString ( plotTitle.c_str() ) );
+
+    displayWidget->show();
+}
+
+void QZMainFrame::AddGraph ( string title, vector< double > x_, vector< double > y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel )
+{
+    emit ForwardAddGraph ( title, x_, y_, xMin_, xMax_, xAxisLabel, yAxisLabel );
+}
+
 void QZMainFrame::closeEvent ( QCloseEvent* event )
 {
     QWidget::closeEvent ( event );
-    emit BlockRootEventsProcessing();
-
-    int counter = 0;
-
-    while ( !isRootProcessDone && counter < 5 )
-    {
-        QTime dieTime= QTime::currentTime().addSecs ( 1 );
-        while ( QTime::currentTime() < dieTime ) QCoreApplication::processEvents ( QEventLoop::AllEvents, 100 );
-
-        counter++;
-    }
-
-    displayWidget->GetRootTimer()->disconnect();
-    displayWidget->GetQRootCanvas()->disconnect();
 
     displayWidget->disconnect();
-
-    delete displayWidget->GetRootTimer();
-    delete displayWidget->GetQRootCanvas()->GetTCanvas();
-    delete displayWidget->GetQRootCanvas();
     delete displayWidget;
 
     emit KillApp();
 }
 
-void QZMainFrame::CreateDisplayWidget ( QString title, int x, int y, int w, int h )
+void QZMainFrame::CreateDisplayWidget ( )
 {
-    displayWidget = new QMainCanvas ( 0 );
+    displayWidget = new QZPlotwidget ( 0 );
 
-    displayWidget->resize ( displayWidget->sizeHint() );
-    displayWidget->setWindowTitle ( title );
-    displayWidget->setGeometry ( x, y, w, h );
+    displayWidget->yAxisMin = -666.666;
+    displayWidget->yAxisMax = -666.666;
+
+    QObject::connect ( this, SIGNAL ( ForwardAddGraph ( string,vector<double>,vector<double>,double,double,string,string ) ),
+                       displayWidget, SLOT ( AddGraph ( string,vector<double>,vector<double>,double,double,string,string ) ) );
+
 //     displayWidget->show();
-
-    QObject::connect ( this, SIGNAL ( BlockRootEventsProcessing() ), displayWidget, SLOT ( BlockRootEventsProcessing() ) );
-    QObject::connect ( displayWidget, SIGNAL ( RootProcessingStarted() ), this, SLOT ( RootProcessingStarted() ) );
-    QObject::connect ( displayWidget, SIGNAL ( RootProcessingDone() ), this, SLOT ( RootProccessingDone() ) );
-}
-
-void QZMainFrame::RootProcessingStarted()
-{
-    isRootProcessDone = false;
-}
-
-void QZMainFrame::RootProccessingDone()
-{
-    isRootProcessDone = true;
 }
 
 void QZMainFrame::RegisterChildrenDefaultValues()
@@ -434,12 +415,12 @@ void QZMainFrame::OnClickPlotGraph()
 
     if ( displayWidget == nullptr )
     {
-        CreateDisplayWidget ( QString ( "Kinematics Graphs" ), 100, 100, 1024, 768 );
+        CreateDisplayWidget ( );
     }
 
     displayWidget->show();
 
-    emit RequestPlotGraph ( displayWidget->GetQRootCanvas()->GetTCanvas(), reacIDs, xAxisID, yAxisID, xMinStr, xMaxStr, stepWidthStr );
+    emit RequestPlotGraph ( reacIDs, xAxisID, yAxisID, xMinStr, xMaxStr, stepWidthStr );
 }
 
 void QZMainFrame::OnClickWriteTable()
@@ -522,24 +503,6 @@ void QZMainFrame::SetSingleConvertValues ( map< string, string > resMap )
     }
 }
 
-QWidget* GetFirstParent ( QWidget* widget )
-{
-    QWidget* parent = widget->parentWidget();
-
-    if ( parent == nullptr ) return widget;
-
-    QWidget* nextParent = parent;
-
-    while ( nextParent != nullptr )
-    {
-        nextParent = parent->parentWidget();
-
-        if ( nextParent != nullptr ) parent = nextParent;
-    }
-
-    return parent;
-}
-
 void HandleSingleConvertEnabled ( QWidget* obj, QLineEdit* toEnable )
 {
     QGroupBox* gB = static_cast<QGroupBox*> ( obj );
@@ -601,176 +564,5 @@ bool ForwardDoubleClick::eventFilter ( QObject* obj, QEvent* event )
 }
 
 
-//------------------------------------------------------------------------------
-
-
-QRootCanvas::QRootCanvas ( QWidget *parent ) : QWidget ( parent, 0 ), fCanvas ( 0 )
-{
-    // QRootCanvas constructor.
-
-    // set options needed to properly update the canvas when resizing the widget
-    // and to properly handle context menus and mouse move events
-//     setAttribute ( Qt::WA_PaintOnScreen, true );
-    setAttribute ( Qt::WA_OpaquePaintEvent, true );
-    setMinimumSize ( 200, 300 );
-    setUpdatesEnabled ( kFALSE );
-    setMouseTracking ( kTRUE );
-
-    // register the QWidget in TVirtualX, giving its native window id
-    int wid = gVirtualX->AddWindow ( ( ULong_t ) winId(), 800, 600 );
-    // create the ROOT TCanvas, giving as argument the QWidget registered id
-    fCanvas = new TCanvas ( "Root Canvas", width(), height(), wid );
-    fCanvas->Modified();
-    fCanvas->Update();
-}
-
-void QRootCanvas::mouseMoveEvent ( QMouseEvent *e )
-{
-//     Handle mouse move events.
-
-    if ( fCanvas )
-    {
-        if ( e->buttons() & Qt::LeftButton )
-        {
-            fCanvas->HandleInput ( kButton1Motion, e->x(), e->y() );
-        }
-        else if ( e->buttons() & Qt::MidButton )
-        {
-            fCanvas->HandleInput ( kButton2Motion, e->x(), e->y() );
-        }
-        else if ( e->buttons() & Qt::RightButton )
-        {
-            fCanvas->HandleInput ( kButton3Motion, e->x(), e->y() );
-        }
-        else
-        {
-            fCanvas->HandleInput ( kMouseMotion, e->x(), e->y() );
-        }
-    }
-}
-
-void QRootCanvas::mousePressEvent ( QMouseEvent *e )
-{
-//     Handle mouse button press events.
-
-    if ( fCanvas )
-    {
-        switch ( e->button() )
-        {
-        case Qt::LeftButton :
-            fCanvas->HandleInput ( kButton1Down, e->x(), e->y() );
-            break;
-        case Qt::MidButton :
-            fCanvas->HandleInput ( kButton2Down, e->x(), e->y() );
-            break;
-        case Qt::RightButton :
-            // does not work properly on Linux...
-            // ...adding setAttribute(Qt::WA_PaintOnScreen, true)
-            // seems to cure the problem
-            fCanvas->HandleInput ( kButton3Down, e->x(), e->y() );
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-void QRootCanvas::mouseReleaseEvent ( QMouseEvent *e )
-{
-//     Handle mouse button release events.
-
-    if ( fCanvas )
-    {
-        switch ( e->button() )
-        {
-        case Qt::LeftButton :
-            fCanvas->HandleInput ( kButton1Up, e->x(), e->y() );
-            break;
-        case Qt::MidButton :
-            fCanvas->HandleInput ( kButton2Up, e->x(), e->y() );
-            break;
-        case Qt::RightButton :
-            // does not work properly on Linux...
-            // ...adding setAttribute(Qt::WA_PaintOnScreen, true)
-            // seems to cure the problem
-            fCanvas->HandleInput ( kButton3Up, e->x(), e->y() );
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-void QRootCanvas::resizeEvent ( QResizeEvent * )
-{
-//     Handle resize events.
-
-    if ( fCanvas )
-    {
-        fCanvas->Resize();
-        fCanvas->Update();
-    }
-}
-
-void QRootCanvas::paintEvent ( QPaintEvent * )
-{
-//     Handle paint events.
-
-    if ( fCanvas )
-    {
-        fCanvas->Resize();
-        fCanvas->Update();
-    }
-}
-
-//------------------------------------------------------------------------------
-
-QMainCanvas::QMainCanvas ( QWidget *parent ) : QWidget ( parent )
-{
-    // QMainCanvas constructor.
-
-    QVBoxLayout *l = new QVBoxLayout ( this );
-    l->addWidget ( canvas = new QRootCanvas ( this ) );
-    fRootTimer = new QTimer ( this );
-    QObject::connect ( fRootTimer, SIGNAL ( timeout() ), this, SLOT ( handle_root_events() ) );
-    fRootTimer->start ( 20 );
-
-    blockProcessing = false;
-}
-
-void QMainCanvas::BlockRootEventsProcessing()
-{
-    blockProcessing = true;
-}
-
-void QMainCanvas::handle_root_events()
-{
-//     call the inner loop of ROOT
-    emit RootProcessingStarted();
-    if ( !blockProcessing ) gSystem->ProcessEvents();
-    emit RootProcessingDone();
-}
-
-void QMainCanvas::changeEvent ( QEvent * e )
-{
-    if ( e->type() == QEvent ::WindowStateChange )
-    {
-        QWindowStateChangeEvent * event = static_cast< QWindowStateChangeEvent * > ( e );
-        if ( ( event->oldState() & Qt::WindowMaximized ) ||
-                ( event->oldState() & Qt::WindowMinimized ) ||
-                ( event->oldState() == Qt::WindowNoState &&
-                  this->windowState() == Qt::WindowMaximized ) )
-        {
-            if ( canvas->GetTCanvas() )
-            {
-                canvas->GetTCanvas()->Resize();
-                canvas->GetTCanvas()->Update();
-            }
-        }
-    }
-}
-
-
-
-#include "../include/moc_QZMainFrame.cpp"
+#include "../include/moc_QZMainframe.cpp"
 

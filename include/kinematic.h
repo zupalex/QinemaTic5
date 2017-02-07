@@ -1,6 +1,10 @@
+#ifndef ROOTKINCALC_H
+#define ROOTKINCALC_H
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 #include <streambuf>
 #include <string>
 #include <vector>
@@ -10,23 +14,14 @@
 #include <cxxabi.h>
 #include <pthread.h>
 #include <iomanip>
+#include <cmath>
+#include "math.h"
+#include <cstdint>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 using namespace std;
-
-#include "TMath.h"
-#include "TString.h"
-#include "TCanvas.h"
-#include "TGraph.h"
-#include "TAxis.h"
-#include "TLegend.h"
-#include "TFrame.h"
-#include "TMultiGraph.h"
-
-#ifndef ROOTKINCALC_H
-#define ROOTKINCALC_H
 
 class ReacInfo
 {
@@ -146,12 +141,23 @@ public:
 
     void CalcKinematic ( float ejecLabAngle_ );
 
-    TGraph* PlotKinematicGraph ( TCanvas* canvas, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw = true );
+    pair<vector<double>, vector<double>> PlotKinematicGraph ( string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth );
 
     float ConvertSingleValue ( string fromQuantity, string toQuantity, float val );
 
     static void WriteTableToFile ( short reactionID, float xMin, float xMax, float precision );
 };
+
+template<typename T> bool IsSameValue ( T a_, T b_ )
+{
+    return a_ == b_;
+}
+
+template<typename T1, typename T2> bool IsSameValue ( T1 a_, T2 b_ )
+{
+    if ( !std::is_same<T1, T2 >::value ) return false;
+    else return IsSameValue<T1> ( a_, b_ );
+}
 
 template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, short posMassExcess, short posBindingEnergy, short posBetaDecay, short posAMU, short posElement,
         short massCheck, T2 chargeCheck, short memberID )
@@ -167,13 +173,13 @@ template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, 
     {
         if ( std::is_same<int, decltype ( chargeCheck ) >::value )
         {
-            if ( std::stoi ( readWord[posElement-2] ) == chargeCheck ) foundMatch = memberID;
+            if ( IsSameValue ( std::stoi ( readWord[posElement-2] ), chargeCheck ) ) foundMatch = memberID;
         }
         else if ( std::is_same<string, decltype ( chargeCheck ) >::value )
         {
 //             std::cout << "Searching Element by Atomic Symbol " << chargeCheck << " ...\n";
 
-            if ( readWord[posElement] == chargeCheck )
+            if ( IsSameValue ( readWord[posElement], chargeCheck ) )
             {
                 foundMatch = memberID;
             }
@@ -229,8 +235,10 @@ template<typename T2> inline int RootKinCalc::CheckForMatch ( string* readWord, 
     return charge;
 }
 
+double EvalGraph ( vector<double> x_, vector<double> y_, double toEval );
 bool CharIsDigit ( char toCheck );
 float GetKinResIDValue ( KinCalcRes kcr, string ID );
 string GetKinResIDString ( short ID );
 
 #endif
+

@@ -57,7 +57,7 @@ public slots:
                              string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn );
     void WriteOutputTable ( int reacID, string xMinStr, string xMaxStr, string stepWidthStr );
     void ConvertSingleValue ( int reacID, QLineEdit* lineEdit );
-    void PlotKinematicsGraph ( TCanvas* canvas, vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr );
+    void PlotKinematicsGraph ( vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr );
 
 signals:
     void RequestResetInputFields ( string mode );
@@ -66,6 +66,9 @@ signals:
     void RequestUpdateReacList ( vector<string> reacList );
 
     void RequestSetSingleConvertValues ( map<string, string> resMap );
+
+    void RedrawPlotWidget ( string graphTitle );
+    void AddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
 };
 
 #endif // CALCMONITOR_H

@@ -5,7 +5,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC  -std=gnu++11")
 set(KinSources kinematic.cxx CalcMonitor.cxx)
 add_library(RootKinObj OBJECT ${KinSources})
 add_library(RootKinLib SHARED $<TARGET_OBJECTS:RootKinObj>)
-target_link_libraries(RootKinLib ${ROOT_LIBRARIES} Qt5::Widgets)
+target_link_libraries(RootKinLib QCustomPlotLibs)
 
 install(TARGETS RootKinLib DESTINATION ${CMAKE_INSTALL_PREFIX}/libs)
 

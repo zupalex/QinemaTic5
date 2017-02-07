@@ -12,72 +12,8 @@ using namespace std;
 #include <QtWidgets/QLineEdit>
 #include <QMainWindow>
 
-
-class QPaintEvent;
-class QResizeEvent;
-class QMouseEvent;
-class QPushButton;
-class QTimer;
-class TCanvas;
-
-class QRootCanvas : public QWidget
-{
-    Q_OBJECT
-
-public:
-    QRootCanvas ( QWidget *parent = 0 );
-    virtual ~QRootCanvas() {}
-    TCanvas* GetTCanvas()
-    {
-        return fCanvas;
-    }
-
-protected:
-    TCanvas        *fCanvas;
-
-    virtual void mouseMoveEvent ( QMouseEvent *e );
-    virtual void mousePressEvent ( QMouseEvent *e );
-    virtual void mouseReleaseEvent ( QMouseEvent *e );
-    virtual void paintEvent ( QPaintEvent *e );
-    virtual void resizeEvent ( QResizeEvent *e );
-};
-
-class QMainCanvas : public QWidget
-{
-    Q_OBJECT
-
-protected:
-    QRootCanvas    *canvas;
-    QTimer         *fRootTimer;
-
-    bool blockProcessing;
-
-public:
-    QMainCanvas ( QWidget *parent = 0 );
-    virtual ~QMainCanvas() {}
-    virtual void changeEvent ( QEvent * e );
-
-public slots:
-    void handle_root_events();
-
-    QRootCanvas* GetQRootCanvas()
-    {
-        return canvas;
-    }
-
-    QTimer* GetRootTimer()
-    {
-        return fRootTimer;
-    }
-
-signals:
-    void RootProcessingStarted();
-    void RootProcessingDone();
-
-public slots:
-    void BlockRootEventsProcessing();
-};
-
+#include "qcustomplot.h"
+#include "QZPlotwidget.h"
 
 namespace Ui
 {
@@ -100,8 +36,8 @@ public:
     explicit QZMainFrame ( QWidget *parent = 0 );
     ~QZMainFrame();
 
-    QMainCanvas* displayWidget;
-    void CreateDisplayWidget ( QString title, int x, int y , int w, int h );
+    QZPlotwidget* displayWidget;
+    void CreateDisplayWidget ( );
 
     QLineEdit* activeSingleConvert;
 
@@ -133,11 +69,11 @@ public slots:
 
     void ResetDefaultValue();
 
-    void RootProccessingDone();
-    void RootProcessingStarted();
+    void RedrawPlotWidget ( string plotTitle );
+
+    void AddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
 
 signals:
-    void BlockRootEventsProcessing();
     void KillApp();
 
     void RequestUpdateReac ( string beamStr, string targetStr, string ejecStr, string recoilStr,
@@ -146,7 +82,9 @@ signals:
                                 string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn );
     void RequestWriteTable ( int reacID, string xMinStr, string xMaxStr, string stepWidthStr );
     void RequestConvertSingle ( int reacID, QLineEdit* lineEdit );
-    void RequestPlotGraph ( TCanvas* canvas, vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr );
+    void RequestPlotGraph ( vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr );
+
+    void ForwardAddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
 };
 
 class ForwardDoubleClick : public QObject
@@ -164,6 +102,6 @@ public:
 };
 
 void HandleSingleConvertEnabled ( QWidget* obj, QLineEdit* toEnable );
-QWidget* GetFirstParent ( QWidget* widget );
 
 #endif // QZMAINFRAME_H
+

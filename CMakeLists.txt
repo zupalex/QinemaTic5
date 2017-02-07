@@ -25,6 +25,17 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #Add custom modules to module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
+message(STATUS "Finding Qt5 packages")
+find_package(Qt5Widgets REQUIRED)
+find_package(Qt5PrintSupport REQUIRED)
+
+include_directories(${Qt5Widgets_INCLUDE_DIRS})
+
+message(STATUS "This software is using QCustomPlot by Emanuel Eichhammer")
+message(STATUS "QCustomPlot website: http://www.qcustomplot.com/index.php/")
+include_directories(qcustomplot/include)
+add_subdirectory(qcustomplot)
+
 #Find the ROOT package and configure the flags and paths
 message(STATUS "Finding ROOT packages")
 find_package (ROOT REQUIRED)
@@ -36,11 +47,6 @@ link_directories(${ROOT_LIBRARY_DIR})
 
 message(STATUS "If the build process failed to find the Qt5 packages, install the Qt5 packages (e.g. \"qtbase5-dev\" for Ubuntu and Debian, \"qt5\" for Mac OSX, \"qt5-qtbase-devel\" on Fedora, ...)")
 
-message(STATUS "Finding Qt5 packages")
-find_package(Qt5Widgets REQUIRED)
-
-include_directories(${Qt5Widgets_INCLUDE_DIRS})
-
 message(STATUS "Processing through the source and include directories")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(${CMAKE_SOURCE_DIR}/source)
@@ -50,7 +56,7 @@ add_subdirectory(widgets)
 
 #---Create the Qt based main program using the library
 add_executable(QtRootKinCalc ${CMAKE_SOURCE_DIR}/source/ExecKinCalcQt.cxx)
-target_link_libraries(QtRootKinCalc WidgetSourcesLib)
+target_link_libraries(QtRootKinCalc QCustomPlotLibs WidgetSourcesLib)
 
 install(TARGETS QtRootKinCalc DESTINATION ${CMAKE_INSTALL_PREFIX})
 

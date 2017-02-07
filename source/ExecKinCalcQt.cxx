@@ -1,12 +1,8 @@
 #include "ExecKinCalcQt.h"
 #include <QApplication>
 
-#include <TApplication.h>
-#include <TSystem.h>
-
 int main ( int argc, char *argv[] )
 {
-    TApplication rootApp ( "Simple Qt ROOT Application", &argc, argv );
     QApplication theApp ( argc, argv );
     QZMainFrame mainWindow;
     mainWindow.show();
@@ -23,8 +19,8 @@ int main ( int argc, char *argv[] )
 
                        calcM, SLOT ( GetReacKinematics ( string, string, string, string, string, string, string, string, string, string, bool, bool ) ) );
 
-    QObject::connect ( &mainWindow, SIGNAL ( RequestPlotGraph ( TCanvas*,vector<int>,string,string,string,string,string ) ),
-                       calcM, SLOT ( PlotKinematicsGraph ( TCanvas*, vector<int>,string,string,string,string,string ) ) );
+    QObject::connect ( &mainWindow, SIGNAL ( RequestPlotGraph ( vector<int>,string,string,string,string,string ) ),
+                       calcM, SLOT ( PlotKinematicsGraph ( vector<int>,string,string,string,string,string ) ) );
 
     QObject::connect ( &mainWindow, SIGNAL ( RequestWriteTable ( int,string,string,string ) ), calcM, SLOT ( WriteOutputTable ( int,string,string,string ) ) );
 
@@ -37,6 +33,11 @@ int main ( int argc, char *argv[] )
 
     QObject::connect ( calcM, SIGNAL ( RequestSetSingleConvertValues ( map<string,string> ) ), &mainWindow, SLOT ( SetSingleConvertValues ( map<string,string> ) ) );
 
+    QObject::connect ( calcM, SIGNAL ( RedrawPlotWidget ( string ) ), &mainWindow, SLOT ( RedrawPlotWidget ( string ) ) );
+
+    QObject::connect ( calcM, SIGNAL ( AddGraph ( string,vector<double>,vector<double>,double,double,string,string ) ),
+                       &mainWindow, SLOT ( AddGraph ( string,vector<double>,vector<double>,double,double,string,string ) ) );
+
     QObject::connect ( &mainWindow, SIGNAL ( KillApp() ), &theApp, SLOT ( quit() ) );
 
     theApp.exec();
@@ -44,8 +45,6 @@ int main ( int argc, char *argv[] )
     mainWindow.disconnect();
     calcM->disconnect();
     delete calcM;
-
-    rootApp.Terminate();
 
     return 0;
 }

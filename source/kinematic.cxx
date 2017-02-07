@@ -9,6 +9,43 @@ float stepWidth_last;
 int quietMode_last;
 float exEjec_last, exRecoil_last;
 
+double EvalGraph ( vector<double> x_, vector<double> y_, double toEval )
+{
+    auto lowItr = std::find ( x_.begin(), x_.end(), toEval );
+
+    auto lstItr = x_.end();
+    lstItr--;
+
+    int low, up;
+
+    low = distance ( x_.begin(), lowItr );
+
+    if ( lowItr != x_.end() ) return y_[low];
+    else
+    {
+        lowItr = lower_bound ( x_.begin(), x_.end(), toEval );
+
+        if ( lowItr == x_.end() ) lowItr--;
+
+        if ( lowItr != x_.begin() ) lowItr--;
+
+        low = distance ( x_.begin(), lowItr );
+
+        auto upItr = lowItr;
+        upItr++;
+
+        up = distance ( x_.begin(), upItr );
+
+        if ( lowItr != x_.end() && upItr != x_.end() )
+        {
+            if ( x_[low] == x_[low] ) return y_[low];
+            else return ( y_[up] + ( toEval - x_[up] ) * ( y_[low] - y_[up] ) / ( x_[low] - x_[up] ) );
+        }
+    }
+
+    return 1.;
+}
+
 bool CharIsDigit ( char toCheck )
 {
     if ( toCheck == '0' || toCheck == '1' || toCheck == '2' || toCheck == '3' || toCheck == '4' || toCheck == '5' || toCheck == '6' || toCheck == '7' || toCheck == '8' || toCheck == '9' )
@@ -338,7 +375,10 @@ void RootKinCalc::GetAtomicFormula ( std::ifstream& mass_db, int mass, int charg
 
             if ( charge == std::stoi ( readWord[posElement-2] ) )
             {
-                toReconstruct = Form ( "%i", mass );
+                char* massChar = new char[4];
+                sprintf ( massChar, "%i", mass );
+
+                toReconstruct = massChar;
                 toReconstruct += readWord[posElement];
 
                 break;
@@ -351,13 +391,15 @@ void RootKinCalc::GetAtomicFormula ( std::ifstream& mass_db, int mass, int charg
 
 string RootKinCalc::GetAtomicFormula ( int mass, string element )
 {
-    string atomicFormula = "";
+    char* atomicFormulaChar = new char[12];
 
     if ( element == "n" ) return "n";
     else if ( element == "H" && mass == 1 ) return "p";
     else if ( element == "H" && mass == 2 ) return "d";
     else if ( element == "H" && mass == 3 ) return "t";
-    else atomicFormula = Form ( "%i%s", mass, element.c_str() );
+    else sprintf ( atomicFormulaChar, "%i%s", mass, element.c_str() );
+
+    string atomicFormula = atomicFormulaChar;
 
     return atomicFormula;
 }
@@ -437,8 +479,8 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
         return;
     }
 
-    float dtr = TMath::DegToRad();
-    float rtd = TMath::RadToDeg();
+    float dtr = M_PI/180.;
+    float rtd = 180./M_PI;
 
     float amu = 931.502; // MeV
 
@@ -500,10 +542,12 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
     exEjec = exEjec_;
     exRecoil = exRecoil_;
 
-    mapKey = Form ( "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
-                    aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
+    char* mapKeyChar = new char[1024];
+    sprintf ( mapKeyChar, "%d%s(%d%s,%d%s)%d%s @%4.3f MeV (E*ejec = %4.3f / E*rec = %4.3f)", aTarget, targetElement.c_str(), aBeam, beamElement.c_str(),
+              aEjec, ejecElement.c_str(), aRecoil, recoilElement.c_str(), beamEkLab, exEjec, exRecoil );
+    mapKey = mapKeyChar;
 
-    betaC = TMath::Sqrt ( beamEkLab * ( beamEkLab + 2*massBeam ) ) / ( totMassInput + beamEkLab );
+    betaC = sqrt ( beamEkLab * ( beamEkLab + 2*massBeam ) ) / ( totMassInput + beamEkLab );
 
     qValueGS = ( rInfo->massExcess["beam"] + rInfo->massExcess["target"] - rInfo->massExcess["ejectile"] - rInfo->massExcess["recoil"] ) / 1000.;
     qValueFinal = qValueGS - exEjec - exRecoil;
@@ -512,12 +556,12 @@ void RootKinCalc::GetBaseKinematicInfo ( int zBeam, int aBeam, int zTarget, int 
 
     if ( !reacAboveThr ) return;
 
-    eCMi = TMath::Sqrt ( totMassInput * totMassInput + ( 2*beamEkLab*massTarget ) );
+    eCMi = sqrt ( totMassInput * totMassInput + ( 2*beamEkLab*massTarget ) );
     eCMf = eCMi + qValueFinal - totMassInput + massEjec + massRecoil;
 
     e3CM = ( eCMf * eCMf + ( massEjec + massRecoil ) * ( massEjec - massRecoil ) ) / ( 2*eCMf );
 
-    beta3C = TMath::Sqrt ( 1 - ( ( massEjec * massEjec ) / ( e3CM * e3CM ) ) );
+    beta3C = sqrt ( 1 - ( ( massEjec * massEjec ) / ( e3CM * e3CM ) ) );
 
     yNew = pow ( e3CM / massEjec, 2 ) * ( 1 - betaC * betaC );
 }
@@ -546,8 +590,8 @@ void RootKinCalc::GetBaseKinematicInfo ( string beam, string target, string ejec
 
 void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
 {
-    float dtr = TMath::DegToRad();
-    float rtd = TMath::RadToDeg();
+    float dtr = M_PI/180.;
+    float rtd = 180./M_PI;
 
     float amu = 931.502; // MeV
 
@@ -556,7 +600,7 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
 
     kcr->ejecLabAngle = ejecLabAngle_;
 
-    kcr->cosagl = TMath::Cos ( ejecLabAngle_ * dtr );
+    kcr->cosagl = cos ( ejecLabAngle_ * dtr );
 
     kcr->b = -betaC * kcr->cosagl;
     kcr->a = yNew + kcr->b*kcr->b;
@@ -565,19 +609,19 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
     kcr->d__2 = kcr->b * kcr->b - kcr->a * kcr->c;
 
     if ( kcr->d__2 < 0 || kcr->a == 0 ) kcr->b3L1 = 1;
-    else kcr->b3L1 = ( -kcr->b + TMath::Sqrt ( kcr->d__2 ) ) / kcr->a;
+    else kcr->b3L1 = ( -kcr->b + sqrt ( kcr->d__2 ) ) / kcr->a;
 
     if ( 1 - kcr->b3L1 * kcr->b3L1  <= 0 || kcr->b3L1 < 0 ) kcr->ejecLabEnergy = -1000;
-    else kcr->ejecLabEnergy = massEjec * ( 1 / TMath::Sqrt ( 1 - kcr->b3L1 * kcr->b3L1 ) - 1 );
+    else kcr->ejecLabEnergy = massEjec * ( 1 / sqrt ( 1 - kcr->b3L1 * kcr->b3L1 ) - 1 );
 
     if ( kcr->ejecLabEnergy > 0 )
     {
-        kcr->ejecCMAngle = TMath::ACos ( ( kcr->b3L1 * kcr->cosagl - betaC ) / ( ( 1 - betaC * kcr->b3L1 * kcr->cosagl ) * beta3C ) ) * rtd;
+        kcr->ejecCMAngle = acos ( ( kcr->b3L1 * kcr->cosagl - betaC ) / ( ( 1 - betaC * kcr->b3L1 * kcr->cosagl ) * beta3C ) ) * rtd;
 
         kcr->recoilLabEnergy = beamEkLab + qValueFinal - kcr->ejecLabEnergy;
 
-        kcr->recoilLabAngle = ( TMath::ASin ( TMath::Sqrt ( ( kcr->ejecLabEnergy * ( kcr->ejecLabEnergy + 2*massEjec ) ) / ( kcr->recoilLabEnergy * ( kcr->recoilLabEnergy + 2*massRecoil ) ) )   *
-                                              TMath::Sin ( ejecLabAngle_ * dtr ) ) ) * rtd;
+        kcr->recoilLabAngle = ( asin ( sqrt ( ( kcr->ejecLabEnergy * ( kcr->ejecLabEnergy + 2*massEjec ) ) / ( kcr->recoilLabEnergy * ( kcr->recoilLabEnergy + 2*massRecoil ) ) )   *
+                                       sin ( ejecLabAngle_ * dtr ) ) ) * rtd;
     }
     else
     {
@@ -589,146 +633,65 @@ void RootKinCalc::CalcKinematic ( float ejecLabAngle_ )
     return;
 }
 
-TGraph* RootKinCalc::PlotKinematicGraph ( TCanvas* canvas, string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth, bool doDraw )
+pair<vector<double>, vector<double>> RootKinCalc::PlotKinematicGraph ( string xAxisID, string yAxisID, float xMin, float xMax, float stepWidth )
 {
-    if(doDraw) canvas->cd();
+    double x_ = xMin;
 
-    string grTitle = Form ( "%s vs. %s for %s", xAxisID.c_str(), yAxisID.c_str(), mapKey.c_str() );
-
-    if ( doDraw ) std::cout << "Plotting " << grTitle << " with steps of " << stepWidth << "...\n";
-
-    std::vector<TGraph*> listOfGraphs;
-
-    listOfGraphs.clear();
-
-    if ( doDraw && canvas != NULL )
-    {
-        auto lOK = canvas->GetListOfPrimitives();
-
-        TMultiGraph* currentMG = new TMultiGraph();
-
-        for ( int i = 0; i < lOK->GetSize(); i++ )
-        {
-            TGraph* gPadGraph = dynamic_cast<TGraph*> ( lOK->At ( i ) );
-            TMultiGraph* testMG = dynamic_cast<TMultiGraph*> ( lOK->At ( i ) );
-
-            if ( gPadGraph != NULL )
-            {
-                listOfGraphs.push_back ( gPadGraph );
-            }
-            else if ( testMG != NULL ) currentMG = testMG;
-        }
-
-        if ( currentMG != NULL && ( ( string ) currentMG->GetTitle() ).length() > 0 && currentMG->GetListOfGraphs()->GetSize() > 0 )
-        {
-            listOfGraphs.clear();
-
-            for ( int i = 0; i < currentMG->GetListOfGraphs()->GetSize(); i++ )
-            {
-                listOfGraphs.push_back ( ( TGraph* ) currentMG->GetListOfGraphs()->At ( i ) );
-            }
-
-            string mgType = currentMG->GetTitle();
-            mgType = mgType.substr ( 0, mgType.find ( " for" ) );
-        }
-        else if ( listOfGraphs.size() > 0 )
-        {
-            string grType = listOfGraphs[0]->GetTitle();
-            grType = grType.substr ( 0, grType.find ( " for" ) );
-        }
-    }
-
-    float x_ = xMin;
-
-    TGraph* tempGr = new TGraph ( kinRes.size() );
-
-    int counter = 0;
+    vector<double> x_temp, y_temp;
+    x_temp.clear();
+    y_temp.clear();
 
     for ( auto itr = kinRes.begin(); itr != kinRes.end(); itr++ )
     {
 //         std::cout << GetKinResIDValue ( &reacItr->second[i], xAxisID ) << " <-> " << GetKinResIDValue ( &reacItr->second[i], yAxisID ) << "\n";
         if ( GetKinResIDValue ( itr->second, xAxisID ) > 0 && GetKinResIDValue ( itr->second, yAxisID ) > 0 )
         {
-            tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, xAxisID ), GetKinResIDValue ( itr->second, yAxisID ) );
-
-            counter++;
+            x_temp.push_back ( GetKinResIDValue ( itr->second, xAxisID ) );
+            y_temp.push_back ( GetKinResIDValue ( itr->second, yAxisID ) );
+//             cout << "Pushed back: " << GetKinResIDValue ( itr->second, xAxisID ) << " , " << GetKinResIDValue ( itr->second, yAxisID ) << "\n";
         }
     }
 
-    TGraph* gr = new TGraph ( ( int ) ( xMin - xMax ) / stepWidth );
+//     cout << "***********************************************\n";
 
-    int pointNum = 0;
+    vector<double> xVect, yVect;
+    xVect.clear();
+    yVect.clear();
 
     while ( x_ <= xMax )
     {
-//         std::cout << x_ << " <-> " << tempGr->Eval ( x_ ) << "\n";
+//         cout << x_ << " <-> " << EvalGraph ( x_temp, y_temp, x_ ) << "\n";
 
-        if ( x_ > 0 && tempGr->Eval ( x_ ) > 0 )
+        double evalX = EvalGraph ( x_temp, y_temp, x_ );
+
+        if ( x_ > 0 && evalX > 0 )
         {
-            gr->SetPoint ( pointNum, x_, tempGr->Eval ( x_ ) );
-            pointNum++;
+            xVect.push_back ( x_ );
+            yVect.push_back ( evalX );
         }
 
         x_ += stepWidth;
     }
 
-    gr->SetTitle ( grTitle.c_str() );
-
-    listOfGraphs.push_back ( gr );
-
-    if ( doDraw )
-    {
-        TMultiGraph* mg = new TMultiGraph();
-
-        for ( int i = 0; i < listOfGraphs.size(); i++ )
-        {
-            listOfGraphs[i]->SetLineColor ( i + 1 );
-            mg->Add ( listOfGraphs[i] );
-        }
-
-        string mgTitle = listOfGraphs[0]->GetTitle();
-        mgTitle = mgTitle.substr ( 0, mgTitle.find ( " for" ) );
-
-        mg->Draw ( "ALP" );
-        mg->SetTitle ( mgTitle.c_str() );
-
-        TLegend* legend = new TLegend ( 0.55,0.7,0.9,0.9 );
-
-        for ( unsigned short i = 0; i < listOfGraphs.size(); i++ )
-        {
-            string legStr = listOfGraphs[i]->GetTitle();
-
-            std::size_t headerEnd = legStr.find ( "for" ) + 4;
-
-            legStr.replace ( 0, headerEnd, "" );
-
-            legend->AddEntry ( listOfGraphs[i], legStr.c_str(), "l" );
-        }
-
-        legend->Draw();
-
-        canvas->Modified();
-        canvas->Update();
-    }
-
-    return gr;
+    return make_pair ( xVect, yVect );
 }
 
 float RootKinCalc::ConvertSingleValue ( string fromQuantity, string toQuantity, float val )
 {
-    TGraph* tempGr = new TGraph ( kinRes.size() );
-
-    int counter = 0;
+    vector<double> x_temp, y_temp;
+    x_temp.clear();
+    y_temp.clear();
 
     for ( auto itr = kinRes.begin(); itr != kinRes.end(); itr++ )
     {
-        tempGr->SetPoint ( counter, GetKinResIDValue ( itr->second, fromQuantity ), GetKinResIDValue ( itr->second, toQuantity ) );
-
-        counter++;
+        x_temp.push_back ( GetKinResIDValue ( itr->second, fromQuantity ) );
+        y_temp.push_back ( GetKinResIDValue ( itr->second, toQuantity ) );
     }
 
 //     std::cout << fromQuantity << ": " << val << "  <--->  " << tempGr->Eval ( val ) << " :" << toQuantity << "\n";
 
-    return tempGr->Eval ( val );
+    return EvalGraph ( x_temp, y_temp, ( double ) val );
 }
+
+
 

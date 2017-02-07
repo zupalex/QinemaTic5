@@ -56,7 +56,7 @@ vector< string > CalcMonitor::GetReacList()
 }
 
 void CalcMonitor::UpdateReacInfo ( string beamStr, string targetStr, string ejecStr, string recoilStr,
-                                   string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn  )
+                                   string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn )
 {
 //     cout << "Clicked Update Reaction Button\n";
 //
@@ -101,8 +101,18 @@ void CalcMonitor::UpdateReacInfo ( string beamStr, string targetStr, string ejec
     if ( invertRecoilEjec ) ejecStr = kinCalc->GetAtomicFormula ( kinCalc->rInfo->A["ejectile"], kinCalc->rInfo->atomicElement["ejectile"] );
     else recoilStr = kinCalc->GetAtomicFormula ( kinCalc->rInfo->A["recoil"], kinCalc->rInfo->atomicElement["recoil"] );
 
-    if ( invertLabCMEn ) beamEkStr = Form ( "%f", kinCalc->beamEkLab );
-    else beamCMEkStr = Form ( "%f", kinCalc->beamEkCM );
+    if ( invertLabCMEn )
+    {
+        char* buffer = new char[128];
+        sprintf ( buffer, "%f", kinCalc->beamEkLab );
+        beamEkStr = buffer;
+    }
+    else
+    {
+        char* buffer = new char[128];
+        sprintf ( buffer, "%f", kinCalc->beamEkCM );
+        beamCMEkStr = buffer;
+    }
 
     lastKinCalc = kinCalc;
 
@@ -133,7 +143,10 @@ void CalcMonitor::ConvertSingleValue ( int reacID, QLineEdit* lineEdit )
         {
             float res = reacItr->second.ConvertSingleValue ( fromQuantity, varItr->second, val );
 
-            resMap[varItr->first] = Form ( "%2.3f",res );
+            char* buffer = new char[128];
+            sprintf ( buffer, "%2.3f",res );
+
+            resMap[varItr->first] = buffer;
         }
     }
 
@@ -141,7 +154,7 @@ void CalcMonitor::ConvertSingleValue ( int reacID, QLineEdit* lineEdit )
 }
 
 void CalcMonitor::GetReacKinematics ( string beamStr, string targetStr, string ejecStr, string recoilStr,
-                                      string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn  )
+                                      string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn )
 {
 //     std::cout << "Clicked Get Kinematics Button\n";
 
@@ -174,7 +187,7 @@ void CalcMonitor::GetReacKinematics ( string beamStr, string targetStr, string e
     emit RequestUpdateReacList ( GetReacList() );
 }
 
-void CalcMonitor::PlotKinematicsGraph ( TCanvas* canvas, vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr )
+void CalcMonitor::PlotKinematicsGraph ( vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr )
 {
 //     std::cout << "Clicked Plot Graph Button\n";
 
@@ -184,14 +197,24 @@ void CalcMonitor::PlotKinematicsGraph ( TCanvas* canvas, vector<int> selectedEnt
     xMax_ = stoi ( xMaxStr );
     stepWidth_ = stof ( stepWidthStr );
 
-    canvas->Clear();
+    char* plotTitle = new char[512];
+    sprintf ( plotTitle, "%s vs. %s", xAxisID.c_str(), yAxisID.c_str() );
+
+    emit RedrawPlotWidget ( ( string ) plotTitle );
 
     for ( unsigned int i = 0; i < selectedEntries.size(); i++ )
     {
         auto reacItr = kinResMap.begin();
         std::advance ( reacItr, selectedEntries[i] );
 
-        reacItr->second.PlotKinematicGraph ( canvas, xAxisID, yAxisID, xMin_, xMax_, stepWidth_ );
+        char* grTitle = new char[512];
+        sprintf ( grTitle, "%s vs. %s for %s", xAxisID.c_str(), yAxisID.c_str(), reacItr->first.c_str() );
+
+        std::cout << "Plotting " << grTitle << " with steps of " << stepWidth_ << "...\n";
+
+        pair<vector<double>, vector<double>> result = reacItr->second.PlotKinematicGraph ( xAxisID, yAxisID, xMin_, xMax_, stepWidth_ );
+
+        emit AddGraph ( ( string ) grTitle, result.first, result.second, xMin_, xMax_, xAxisID, yAxisID );
     }
 }
 
@@ -274,10 +297,10 @@ void CalcMonitor::WriteOutputTable ( int reacID, string xMinStr, string xMaxStr,
 
 //     std::cout << "Preparing temp graphs...\n";
 
-    TGraph* aLabEjecVSCMEjec = grItr->second.PlotKinematicGraph ( nullptr, GetKinResIDString ( 0 ), GetKinResIDString ( 2 ), xMin, xMax, precision, false );
-    TGraph* aLabejecVSenLabEjec = grItr->second.PlotKinematicGraph ( nullptr, GetKinResIDString ( 0 ), GetKinResIDString ( 1 ), xMin, xMax, precision, false );
-    TGraph* aLabejecVSaLabRec = grItr->second.PlotKinematicGraph ( nullptr, GetKinResIDString ( 0 ), GetKinResIDString ( 3 ), xMin, xMax, precision, false );
-    TGraph* aLabejecVSenLabRec = grItr->second.PlotKinematicGraph ( nullptr, GetKinResIDString ( 0 ), GetKinResIDString ( 4 ), xMin, xMax, precision, false );
+    pair<vector<double>, vector<double>> aLabEjecVSCMEjec = grItr->second.PlotKinematicGraph ( GetKinResIDString ( 0 ), GetKinResIDString ( 2 ), xMin, xMax, precision );
+    pair<vector<double>, vector<double>> aLabejecVSenLabEjec = grItr->second.PlotKinematicGraph ( GetKinResIDString ( 0 ), GetKinResIDString ( 1 ), xMin, xMax, precision );
+    pair<vector<double>, vector<double>> aLabejecVSaLabRec = grItr->second.PlotKinematicGraph ( GetKinResIDString ( 0 ), GetKinResIDString ( 3 ), xMin, xMax, precision );
+    pair<vector<double>, vector<double>> aLabejecVSenLabRec = grItr->second.PlotKinematicGraph ( GetKinResIDString ( 0 ), GetKinResIDString ( 4 ), xMin, xMax, precision );
 
 //     std::cout << "Finished creating temp graphs...\n";
 
@@ -302,10 +325,10 @@ void CalcMonitor::WriteOutputTable ( int reacID, string xMinStr, string xMaxStr,
     while ( x_ <= xMax )
     {
         outTable << setw ( 29 ) << left << x_;
-        outTable << setw ( 29 ) << left << aLabejecVSenLabEjec->Eval ( x_ );
-        outTable << setw ( 21 ) << left << aLabEjecVSCMEjec->Eval ( x_ );
-        outTable << setw ( 27 ) << left << aLabejecVSaLabRec->Eval ( x_ );
-        outTable << setw ( 24 ) << left << aLabejecVSenLabRec->Eval ( x_ );
+        outTable << setw ( 29 ) << left << EvalGraph ( aLabejecVSenLabEjec.first, aLabejecVSenLabEjec.second, x_ );
+        outTable << setw ( 21 ) << left << EvalGraph ( aLabEjecVSCMEjec.first, aLabEjecVSCMEjec.second, x_ );
+        outTable << setw ( 27 ) << left << EvalGraph ( aLabejecVSaLabRec.first, aLabejecVSaLabRec.second, x_ );
+        outTable << setw ( 24 ) << left << EvalGraph ( aLabejecVSenLabRec.first, aLabejecVSenLabRec.second, x_ );
         outTable << "\n";
 
         x_ += precision;
