@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1135</width>
+    <width>1180</width>
     <height>780</height>
    </rect>
   </property>
@@ -16,9 +16,9 @@
   <widget class="QCustomPlot" name="customPlot" native="true">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>190</x>
      <y>50</y>
-     <width>941</width>
+     <width>951</width>
      <height>681</height>
     </rect>
    </property>
@@ -26,7 +26,7 @@
   <widget class="QLabel" name="plotTitle">
    <property name="geometry">
     <rect>
-     <x>158</x>
+     <x>188</x>
      <y>10</y>
      <width>941</width>
      <height>31</height>
@@ -45,7 +45,7 @@
   <widget class="QLineEdit" name="xMinIF">
    <property name="geometry">
     <rect>
-     <x>132</x>
+     <x>162</x>
      <y>740</y>
      <width>61</width>
      <height>23</height>
@@ -55,7 +55,7 @@
   <widget class="QLineEdit" name="xMaxIF">
    <property name="geometry">
     <rect>
-     <x>1070</x>
+     <x>1110</x>
      <y>740</y>
      <width>61</width>
      <height>23</height>
@@ -65,7 +65,7 @@
   <widget class="QLineEdit" name="yMinIF">
    <property name="geometry">
     <rect>
-     <x>90</x>
+     <x>120</x>
      <y>710</y>
      <width>61</width>
      <height>23</height>
@@ -75,7 +75,7 @@
   <widget class="QLineEdit" name="yMaxIF">
    <property name="geometry">
     <rect>
-     <x>90</x>
+     <x>120</x>
      <y>50</y>
      <width>61</width>
      <height>23</height>
@@ -90,6 +90,17 @@
      <width>131</width>
      <height>601</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#toolsGroupBox
+{
+	border: 2px solid rgb(85, 0, 127);
+}
+
+QGroupBox::title
+{
+	padding: 0 0px
+}</string>
    </property>
    <property name="title">
     <string>Tools</string>
@@ -162,16 +173,68 @@
      <string>Y Axis</string>
     </property>
    </widget>
+   <widget class="QGroupBox" name="graphToolsGB">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>170</y>
+      <width>111</width>
+      <height>421</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Graph Options</string>
+    </property>
+    <widget class="QSpinBox" name="lineSizeSB">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>30</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>20</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>30</y>
+       <width>61</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Line Size</string>
+     </property>
+     <property name="scaledContents">
+      <bool>false</bool>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </widget>
    <zorder>logScaleCB</zorder>
    <zorder>recenterPB</zorder>
    <zorder>dragXCB</zorder>
    <zorder>dragYCB</zorder>
    <zorder>allowDragCB</zorder>
+   <zorder>graphToolsGB</zorder>
   </widget>
   <widget class="QWidget" name="yAxisHitbox" native="true">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>190</x>
      <y>90</y>
      <width>51</width>
      <height>601</height>
@@ -181,7 +244,7 @@
   <widget class="QWidget" name="xAxisHitbox" native="true">
    <property name="geometry">
     <rect>
-     <x>210</x>
+     <x>240</x>
      <y>690</y>
      <width>851</width>
      <height>41</height>
@@ -189,6 +252,120 @@
    </property>
    <property name="toolTipDuration">
     <number>0</number>
+   </property>
+  </widget>
+  <widget class="Line" name="xSliderLine">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>740</y>
+     <width>851</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Plain</enum>
+   </property>
+   <property name="lineWidth">
+    <number>3</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="xSliderHandleLeft">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>740</y>
+     <width>16</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>../../../../mnt/hgfs/Dropbox/ORNL/QinemaTic5/widgets/resources/slider.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="xSliderHandleRight">
+   <property name="geometry">
+    <rect>
+     <x>1080</x>
+     <y>740</y>
+     <width>16</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>../../../../mnt/hgfs/Dropbox/ORNL/QinemaTic5/widgets/resources/slider.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="Line" name="ySliderLine">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>90</y>
+     <width>21</width>
+     <height>601</height>
+    </rect>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Plain</enum>
+   </property>
+   <property name="lineWidth">
+    <number>3</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Vertical</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ySliderHandleBottom">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>680</y>
+     <width>21</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>../../../../mnt/hgfs/Dropbox/ORNL/QinemaTic5/widgets/resources/slider_rot.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ySliderHandleTop">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>90</y>
+     <width>21</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>../../../../mnt/hgfs/Dropbox/ORNL/QinemaTic5/widgets/resources/slider_rot.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
    </property>
   </widget>
   <zorder>plotTitle</zorder>
@@ -200,6 +377,12 @@
   <zorder>customPlot</zorder>
   <zorder>xAxisHitbox</zorder>
   <zorder>yAxisHitbox</zorder>
+  <zorder>xSliderLine</zorder>
+  <zorder>xSliderHandleLeft</zorder>
+  <zorder>xSliderHandleRight</zorder>
+  <zorder>ySliderLine</zorder>
+  <zorder>ySliderHandleBottom</zorder>
+  <zorder>ySliderHandleTop</zorder>
  </widget>
  <customwidgets>
   <customwidget>

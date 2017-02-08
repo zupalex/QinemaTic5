@@ -38,6 +38,30 @@ QZPlotwidget::QZPlotwidget ( QWidget *parent ) :
 
     findChild<QWidget*> ( "xAxisHitbox" )->installEventFilter ( fMt );
     findChild<QWidget*> ( "yAxisHitbox" )->installEventFilter ( fMt );
+
+    QDir resourcesFolder ( QDir::toNativeSeparators ( QCoreApplication::applicationDirPath() ) );
+    resourcesFolder.cd ( QString ( "../" ) );
+    resourcesFolder.cd ( QString ( "./widgets/resources" ) );
+
+//     cout << "Resources directory path: " << QDir::toNativeSeparators ( resourcesFolder.absolutePath() ).toUtf8().constData() << endl;;
+
+    findChild<QLabel*> ( "xSliderHandleLeft" )->setPixmap ( QPixmap ( QDir::toNativeSeparators ( resourcesFolder.absolutePath() + QString ( "/slider.png" ) ) ) );
+    findChild<QLabel*> ( "xSliderHandleRight" )->setPixmap ( QPixmap ( QDir::toNativeSeparators ( resourcesFolder.absolutePath() + QString ( "/slider.png" ) ) ) );
+    findChild<QLabel*> ( "ySliderHandleTop" )->setPixmap ( QPixmap ( QDir::toNativeSeparators ( resourcesFolder.absolutePath() + QString ( "/slider_rot.png" ) ) ) );
+    findChild<QLabel*> ( "ySliderHandleBottom" )->setPixmap ( QPixmap ( QDir::toNativeSeparators ( resourcesFolder.absolutePath() + QString ( "/slider_rot.png" ) ) ) );
+
+    findChild<QLabel*> ( "xSliderHandleLeft" )->installEventFilter ( fMt );
+    findChild<QLabel*> ( "xSliderHandleRight" )->installEventFilter ( fMt );
+    findChild<QLabel*> ( "ySliderHandleTop" )->installEventFilter ( fMt );
+    findChild<QLabel*> ( "ySliderHandleBottom" )->installEventFilter ( fMt );
+
+    RegisterInitialSliderHandlesPos();
+
+    findChild<QGroupBox*> ( "graphToolsGB" )->hide();
+
+    QObject::connect ( GetQCustomPlot(), SIGNAL ( selectionChangedByUser() ), this, SLOT ( ToogleGraphToolsGB() ) );
+
+    QObject::connect ( findChild<QSpinBox*> ( "lineSizeSB" ), SIGNAL ( valueChanged ( int ) ), this, SLOT ( ChangeLineSize ( int ) ) );
 }
 
 QZPlotwidget::~QZPlotwidget()
@@ -76,6 +100,24 @@ void QZPlotwidget::RegisterStandardSizes()
             standardSizes[widg->objectName()] = widg->size();
         }
     }
+}
+
+void QZPlotwidget::RegisterInitialSliderHandlesPos()
+{
+    initialSliderHandlesPos[QString ( "xSliderHandleLeft" )] = QPoint ( findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().x(), findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().y() );
+    initialSliderHandlesPos[QString ( "xSliderHandleRight" )] = QPoint ( findChild<QLabel*> ( "xSliderHandleRight" )->geometry().x(), findChild<QLabel*> ( "xSliderHandleRight" )->geometry().y() );
+
+    xSliderRange = findChild<QLabel*> ( "xSliderHandleRight" )->geometry().x() - findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().x();
+
+    initialSliderHandlesPos[QString ( "ySliderHandleTop" )] = QPoint ( findChild<QLabel*> ( "ySliderHandleTop" )->geometry().x(), findChild<QLabel*> ( "ySliderHandleTop" )->geometry().y() );
+    initialSliderHandlesPos[QString ( "ySliderHandleBottom" )] = QPoint ( findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().x(), findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().y() );
+
+    ySliderRange = findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().y() - findChild<QLabel*> ( "ySliderHandleTop" )->geometry().y();
+
+//     cout << "X Left Slider: " << findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().x() << " , " << findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().y() << endl;
+//     cout << "X Left Right: " << findChild<QLabel*> ( "xSliderHandleRight" )->geometry().x() << " , " << findChild<QLabel*> ( "xSliderHandleRight" )->geometry().y() << endl;
+//     cout << "Y Top Slider: " << findChild<QLabel*> ( "ySliderHandleTop" )->geometry().x() << " , " << findChild<QLabel*> ( "ySliderHandleTop" )->geometry().y() << endl;
+//     cout << "Y Botton Slider: " << findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().x() << " , " << findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().y() << endl;
 }
 
 void QZPlotwidget::resizeEvent ( QResizeEvent* event )
@@ -177,6 +219,40 @@ void QZPlotwidget::ToogleAllowDragY ( int isOn )
     }
 }
 
+void QZPlotwidget::ToogleGraphToolsGB()
+{
+    if ( GetQCustomPlot()->selectedPlottables().count() > 0 )
+    {
+        findChild<QGroupBox*> ( "graphToolsGB" )->show();
+        findChild<QSpinBox*> ( "lineSizeSB" )->blockSignals ( true );
+        findChild<QSpinBox*> ( "lineSizeSB" )->setValue ( GetQCustomPlot()->selectedPlottables().at ( 0 )->pen().width() );
+        findChild<QSpinBox*> ( "lineSizeSB" )->blockSignals ( false );
+    }
+    else findChild<QGroupBox*> ( "graphToolsGB" )->hide();
+}
+
+void QZPlotwidget::ChangeLineSize ( int newSize )
+{
+    if ( GetQCustomPlot()->selectedPlottables().count() > 0 )
+    {
+        QPen newPen = GetQCustomPlot()->selectedPlottables().at ( 0 )->pen();
+        newPen.setWidth ( newSize );
+
+        GetQCustomPlot()->selectedPlottables().at ( 0 )->setPen ( newPen );
+
+        QCPSelectionDecorator* oldSD = GetQCustomPlot()->selectedPlottables().at ( 0 )->selectionDecorator();
+        QPen newSDPen = oldSD->pen();
+        newSDPen.setWidth ( newSize );
+        newSDPen.setColor ( newPen.color() );
+
+        oldSD->setPen ( newSDPen );
+
+        oldSD->pen().setWidth ( newSize );
+
+        GetQCustomPlot()->replot();
+    }
+}
+
 void QZPlotwidget::RecenterAxis()
 {
 //     cout << "Requested a recenter with the following values: \n";
@@ -185,6 +261,11 @@ void QZPlotwidget::RecenterAxis()
 
     GetQCustomPlot()->xAxis->setRange ( origXMin, origXMax );
     GetQCustomPlot()->yAxis->setRange ( origYMin, origYMax );
+
+    xAxisMin = origXMin;
+    xAxisMax = origXMax;
+    yAxisMin = origYMin;
+    yAxisMax = origYMax;
 
     GetQCustomPlot()->replot();
 }
@@ -217,8 +298,8 @@ void QZPlotwidget::UpdateXAxisRangeBoxes ( const QCPRange& newRange )
 {
     char* newRangeStr = new char[16];
 
-    double newXMin = newRange.lower;
-    sprintf ( newRangeStr, "%2.3f", newXMin );
+    xAxisMin = newRange.lower;
+    sprintf ( newRangeStr, "%2.3f", xAxisMin );
 
 //     cout << "New XMin value : " << newRangeStr << endl;
 
@@ -226,9 +307,9 @@ void QZPlotwidget::UpdateXAxisRangeBoxes ( const QCPRange& newRange )
     findChild<QLineEdit*> ( "xMinIF" )->setText ( QString ( newRangeStr ) );
     findChild<QLineEdit*> ( "xMinIF" )->blockSignals ( false );
 
-    double newXMax = newRange.upper;
+    xAxisMax = newRange.upper;
 
-    sprintf ( newRangeStr, "%2.3f", newXMax );
+    sprintf ( newRangeStr, "%2.3f", xAxisMax );
     findChild<QLineEdit*> ( "xMaxIF" )->blockSignals ( true );
     findChild<QLineEdit*> ( "xMaxIF" )->setText ( QString ( newRangeStr ) );
     findChild<QLineEdit*> ( "xMaxIF" )->blockSignals ( false );
@@ -238,8 +319,8 @@ void QZPlotwidget::UpdateYAxisRangeBoxes ( const QCPRange& newRange )
 {
     char* newRangeStr = new char[16];
 
-    double newXMin = newRange.lower;
-    sprintf ( newRangeStr, "%2.3f", newXMin );
+    yAxisMin = newRange.lower;
+    sprintf ( newRangeStr, "%2.3f", yAxisMin );
 
 //     cout << "New XMin value : " << newRangeStr << endl;
 
@@ -247,9 +328,9 @@ void QZPlotwidget::UpdateYAxisRangeBoxes ( const QCPRange& newRange )
     findChild<QLineEdit*> ( "yMinIF" )->setText ( QString ( newRangeStr ) );
     findChild<QLineEdit*> ( "yMinIF" )->blockSignals ( false );
 
-    double newXMax = newRange.upper;
+    yAxisMax = newRange.upper;
 
-    sprintf ( newRangeStr, "%2.3f", newXMax );
+    sprintf ( newRangeStr, "%2.3f", yAxisMax );
     findChild<QLineEdit*> ( "yMaxIF" )->blockSignals ( true );
     findChild<QLineEdit*> ( "yMaxIF" )->setText ( QString ( newRangeStr ) );
     findChild<QLineEdit*> ( "yMaxIF" )->blockSignals ( false );
@@ -291,6 +372,10 @@ void QZPlotwidget::AddGraph ( string title, vector<double> x_, vector<double> y_
     GetQCustomPlot()->yAxis->setRange ( std::max ( 0., yAxisMin - ( yAxisMax-yAxisMin ) *0.1 ), yAxisMax + ( yAxisMax-yAxisMin ) *0.1 );
 
     GetQCustomPlot()->graph()->setPen ( pen );
+
+    QPen newSDPen = GetQCustomPlot()->graph()->selectionDecorator()->pen();
+    newSDPen.setColor ( pen.color() );
+    GetQCustomPlot()->graph()->selectionDecorator()->setPen ( newSDPen );
 
     GetQCustomPlot()->legend->setVisible ( true );
     GetQCustomPlot()->legend->setFont ( QFont ( "Helvetica",9 ) );
@@ -341,25 +426,174 @@ bool ForwardMouseTracking::eventFilter ( QObject* obj, QEvent* event )
     QZPlotwidget* plotWidg = dynamic_cast<QZPlotwidget*> ( GetFirstParent ( widg ) );
     if ( plotWidg == nullptr ) return true;
 
-    if ( event->type() == QEvent::Enter )
+    if ( widg->objectName() == QString ( "xSliderHandleLeft" ) )
     {
-//         cout << "Forwarded a mouse enter event\n";
+        if ( event->type() == QEvent::MouseButtonPress )
+        {
+            widg->grabMouse();
+            plotWidg->xRangeBeforeDrag = plotWidg->xAxisMax - plotWidg->xAxisMin;
+            plotWidg->xMinBeforeDrag = plotWidg->xAxisMin;
+            plotWidg->xMaxBeforeDrag = plotWidg->xAxisMax;
+        }
+        if ( event->type() == QEvent::MouseButtonRelease )
+        {
+            widg->releaseMouse();
+            widg->move ( plotWidg->initialSliderHandlesPos["xSliderHandleLeft"].x(), widg->geometry().y() );
+        }
 
+        if ( event->type() == QEvent::MouseMove )
+        {
+            QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*> ( event );
+
+            QPoint localMousePos = plotWidg->mapFromGlobal ( QPoint ( mouseEvent->globalPos() ) );
+
+            if ( localMousePos.x() > plotWidg->initialSliderHandlesPos["xSliderHandleLeft"].x() &&
+                    localMousePos.x() < plotWidg->findChild<QLabel*> ( "xSliderHandleRight" )->geometry().x() - plotWidg->findChild<QLabel*> ( "xSliderHandleRight" )->geometry().width() )
+            {
+                widg->move ( localMousePos.x(), widg->geometry().y() );
+
+                double slideMove = localMousePos.x() - plotWidg->initialSliderHandlesPos["xSliderHandleLeft"].x();
+                double rangeMultiplier = slideMove / plotWidg->xSliderRange;
+
+                char* newVal = new char[24];
+                sprintf ( newVal, "%2.3f", plotWidg->xMinBeforeDrag + plotWidg->xRangeBeforeDrag*rangeMultiplier );
+
+                plotWidg->findChild<QLineEdit*> ( "xMinIF" )->setText ( QString ( newVal ) );
+                emit plotWidg->RescaleXAxis();
+            }
+            else return true;
+        }
+
+        return QObject::eventFilter ( obj, event );
+    }
+    else if ( widg->objectName() == QString ( "xSliderHandleRight" ) )
+    {
+        if ( event->type() == QEvent::MouseButtonPress )
+        {
+            widg->grabMouse();
+            plotWidg->xRangeBeforeDrag = plotWidg->xAxisMax - plotWidg->xAxisMin;
+            plotWidg->xMinBeforeDrag = plotWidg->xAxisMin;
+            plotWidg->xMaxBeforeDrag = plotWidg->xAxisMax;
+        }
+        if ( event->type() == QEvent::MouseButtonRelease )
+        {
+            widg->releaseMouse();
+            widg->move ( plotWidg->initialSliderHandlesPos["xSliderHandleRight"].x(), widg->geometry().y() );
+        }
+
+        if ( event->type() == QEvent::MouseMove )
+        {
+            QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*> ( event );
+
+            QPoint localMousePos = plotWidg->mapFromGlobal ( QPoint ( mouseEvent->globalPos() ) );
+
+            if ( localMousePos.x() < plotWidg->initialSliderHandlesPos["xSliderHandleRight"].x() &&
+                    localMousePos.x() > plotWidg->findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().x() + plotWidg->findChild<QLabel*> ( "xSliderHandleLeft" )->geometry().width() /2. )
+            {
+                widg->move ( localMousePos.x(), widg->geometry().y() );
+
+                double slideMove = localMousePos.x() - plotWidg->initialSliderHandlesPos["xSliderHandleRight"].x();
+                double rangeMultiplier = slideMove / plotWidg->xSliderRange;
+
+                char* newVal = new char[24];
+                sprintf ( newVal, "%2.3f", plotWidg->xMaxBeforeDrag + plotWidg->xRangeBeforeDrag*rangeMultiplier );
+
+                plotWidg->findChild<QLineEdit*> ( "xMaxIF" )->setText ( QString ( newVal ) );
+                emit plotWidg->RescaleXAxis();
+            }
+            else return true;
+        }
+
+        return QObject::eventFilter ( obj, event );
+    }
+    else if ( widg->objectName() == QString ( "ySliderHandleTop" ) )
+    {
+        if ( event->type() == QEvent::MouseButtonPress )
+        {
+            widg->grabMouse();
+            plotWidg->yRangeBeforeDrag = plotWidg->yAxisMax - plotWidg->yAxisMin;
+            plotWidg->yMinBeforeDrag = plotWidg->yAxisMin;
+            plotWidg->yMaxBeforeDrag = plotWidg->yAxisMax;
+        }
+        if ( event->type() == QEvent::MouseButtonRelease )
+        {
+            widg->releaseMouse();
+            widg->move ( widg->geometry().x(), plotWidg->initialSliderHandlesPos["ySliderHandleTop"].y() );
+        }
+
+        if ( event->type() == QEvent::MouseMove )
+        {
+            QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*> ( event );
+
+            QPoint localMousePos = plotWidg->mapFromGlobal ( QPoint ( mouseEvent->globalPos() ) );
+
+            if ( localMousePos.y() > plotWidg->initialSliderHandlesPos["ySliderHandleTop"].y() &&
+                    localMousePos.y() < plotWidg->findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().y() - plotWidg->findChild<QLabel*> ( "ySliderHandleBottom" )->geometry().height() /2. )
+            {
+                widg->move ( widg->geometry().x(), localMousePos.y() );
+
+                double slideMove = localMousePos.y() - plotWidg->initialSliderHandlesPos["ySliderHandleTop"].y();
+                double rangeMultiplier = slideMove / plotWidg->ySliderRange;
+
+                char* newVal = new char[24];
+                sprintf ( newVal, "%2.3f", plotWidg->yMaxBeforeDrag - plotWidg->yRangeBeforeDrag*rangeMultiplier );
+
+                plotWidg->findChild<QLineEdit*> ( "yMaxIF" )->setText ( QString ( newVal ) );
+                emit plotWidg->RescaleYAxis();
+            }
+            else return true;
+        }
+
+        return QObject::eventFilter ( obj, event );
+    }
+    else if ( widg->objectName() == QString ( "ySliderHandleBottom" ) )
+    {
+        if ( event->type() == QEvent::MouseButtonPress )
+        {
+            widg->grabMouse();
+            plotWidg->yRangeBeforeDrag = plotWidg->yAxisMax - plotWidg->yAxisMin;
+            plotWidg->yMinBeforeDrag = plotWidg->yAxisMin;
+            plotWidg->yMaxBeforeDrag = plotWidg->yAxisMax;
+        }
+        if ( event->type() == QEvent::MouseButtonRelease )
+        {
+            widg->releaseMouse();
+            widg->move ( widg->geometry().x(), plotWidg->initialSliderHandlesPos["ySliderHandleBottom"].y() );
+        }
+
+        if ( event->type() == QEvent::MouseMove )
+        {
+            QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*> ( event );
+
+            QPoint localMousePos = plotWidg->mapFromGlobal ( QPoint ( mouseEvent->globalPos() ) );
+
+            if ( localMousePos.y() < plotWidg->initialSliderHandlesPos["ySliderHandleBottom"].y() &&
+                    localMousePos.y() > plotWidg->findChild<QLabel*> ( "ySliderHandleTop" )->geometry().y() + plotWidg->findChild<QLabel*> ( "ySliderHandleTop" )->geometry().height() /2. )
+            {
+                widg->move ( widg->geometry().x(), localMousePos.y() );
+
+                double slideMove = localMousePos.y() - plotWidg->initialSliderHandlesPos["ySliderHandleBottom"].y();
+                double rangeMultiplier = slideMove / plotWidg->ySliderRange;
+
+                char* newVal = new char[24];
+                sprintf ( newVal, "%2.3f", plotWidg->yMinBeforeDrag - plotWidg->yRangeBeforeDrag*rangeMultiplier );
+
+                plotWidg->findChild<QLineEdit*> ( "yMinIF" )->setText ( QString ( newVal ) );
+                emit plotWidg->RescaleYAxis();
+            }
+            else return true;
+        }
+
+        return QObject::eventFilter ( obj, event );
+    }
+    else if ( event->type() == QEvent::Enter )
+    {
         if ( widg != nullptr )
         {
-//             cout << "Forwarded a mouse enter event to a QWidget Object\n";
-
             if ( plotWidg != nullptr )
             {
-                if ( widg->objectName() == QString ( "xAxisHitbox" ) )
-                {
-//                     cout << "Hovering on the x axis...\n";
-                    plotWidg->GetQCustomPlot()->axisRect()->setRangeZoom ( Qt::Horizontal );
-                }
-                else if ( widg->objectName() == QString ( "yAxisHitbox" ) )
-                {
-                    plotWidg->GetQCustomPlot()->axisRect()->setRangeZoom ( Qt::Vertical );
-                }
+                if ( widg->objectName() == QString ( "xAxisHitbox" ) )  plotWidg->GetQCustomPlot()->axisRect()->setRangeZoom ( Qt::Horizontal );
+                else if ( widg->objectName() == QString ( "yAxisHitbox" ) ) plotWidg->GetQCustomPlot()->axisRect()->setRangeZoom ( Qt::Vertical );
             }
         }
 
@@ -367,41 +601,23 @@ bool ForwardMouseTracking::eventFilter ( QObject* obj, QEvent* event )
     }
     else if ( event->type() == QEvent::Leave )
     {
-//         cout << "Forwarded a mouse leave event\n";
-
         if ( widg != nullptr )
         {
-//             cout << "Forwarded a mouse enter leave to a QWidget Object\n";
-
-            if ( plotWidg != nullptr )
-            {
-//                 cout << "Found the first parent: " << plotWidg->objectName().toUtf8().constData() << endl;
-
-                plotWidg->GetQCustomPlot()->axisRect()->setRangeZoom ( 0 );
-            }
+            if ( plotWidg != nullptr ) plotWidg->GetQCustomPlot()->axisRect()->setRangeZoom ( 0 );
         }
 
         return true;
     }
     else if ( plotWidg->GetQCustomPlot()->axisRect()->rangeZoom() != 0 )
     {
-//         cout << "rangeZoom is not equal to 0\n";
-
-        if ( event->type() == QEvent::Wheel )
-        {
-//             cout << "Forwarded a wheel event to the QCustomWidget\n";
-
-            QCoreApplication::sendEvent ( plotWidg->GetQCustomPlot(), event );
-        }
+        if ( event->type() == QEvent::Wheel ) QCoreApplication::sendEvent ( plotWidg->GetQCustomPlot(), event );
     }
-    else
-    {
-        // standard event processing
-        return QObject::eventFilter ( obj, event );
-    }
+    else return QObject::eventFilter ( obj, event );
 }
 
 #include "../include/moc_QZPlotwidget.cpp"
+
+
 
 
 

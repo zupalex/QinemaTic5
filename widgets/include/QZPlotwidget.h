@@ -5,6 +5,7 @@
 
 #include <QWidget>
 #include <QtGui/QResizeEvent>
+#include <QtGui/QDragMoveEvent>
 #include "qcustomplot.h"
 
 using namespace std;
@@ -38,6 +39,8 @@ private:
     map<QString, QSize> standardSizes;
 
     void RegisterStandardSizes();
+    void RegisterInitialSliderHandlesPos();
+
     ForwardMouseTracking* fMt;
 
 protected:
@@ -53,6 +56,21 @@ public:
         return findChild<QCustomPlot*> ( "customPlot" );
     }
 
+    QColor colorPalette[10];
+
+    map<QString, QPoint> initialSliderHandlesPos;
+    double xSliderRange;
+    double ySliderRange;
+
+    double xRangeBeforeDrag;
+    double yRangeBeforeDrag;
+
+    double xMinBeforeDrag;
+    double xMaxBeforeDrag;
+
+    double yMaxBeforeDrag;
+    double yMinBeforeDrag;
+
     double origXMin;
     double origXMax;
     double origYMin;
@@ -63,8 +81,6 @@ public:
 
     double yAxisMax;
     double yAxisMin;
-
-    QColor colorPalette[10];
 
 signals:
 
@@ -83,8 +99,14 @@ public slots:
 
     void UpdateXAxisRangeBoxes ( const QCPRange& newRange );
     void UpdateYAxisRangeBoxes ( const QCPRange& newRange );
+
+    void ToogleGraphToolsGB();
+
+    void ChangeLineSize ( int newSize );
 };
 
 QWidget* GetFirstParent ( QWidget* widget );
 
 #endif // QZPLOTWIDGET_H
+
+
