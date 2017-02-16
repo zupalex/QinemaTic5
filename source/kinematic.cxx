@@ -18,29 +18,25 @@ double EvalGraph ( vector<double> x_, vector<double> y_, double toEval )
 
     int low, up;
 
-    low = distance ( x_.begin(), lowItr );
+    low = std::distance ( x_.begin(), lowItr );
 
     if ( lowItr != x_.end() ) return y_[low];
     else
     {
-        lowItr = lower_bound ( x_.begin(), x_.end(), toEval );
+        lowItr = std::lower_bound ( x_.begin(), x_.end(), toEval );
 
         if ( lowItr == x_.end() ) lowItr--;
 
         if ( lowItr != x_.begin() ) lowItr--;
 
-        low = distance ( x_.begin(), lowItr );
+        low = std::distance ( x_.begin(), lowItr );
 
         auto upItr = lowItr;
         upItr++;
 
-        up = distance ( x_.begin(), upItr );
+        up = std::distance ( x_.begin(), upItr );
 
-        if ( lowItr != x_.end() && upItr != x_.end() )
-        {
-            if ( x_[low] == x_[low] ) return y_[low];
-            else return ( y_[up] + ( toEval - x_[up] ) * ( y_[low] - y_[up] ) / ( x_[low] - x_[up] ) );
-        }
+        return ( y_[up] + ( toEval - x_[up] ) * ( y_[low] - y_[up] ) / ( x_[low] - x_[up] ) );
     }
 
     return 1.;

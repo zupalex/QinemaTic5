@@ -263,6 +263,43 @@ QGroupBox::title
      <height>21</height>
     </rect>
    </property>
+   <property name="palette">
+    <palette>
+     <active>
+      <colorrole role="WindowText">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>112</red>
+         <green>112</green>
+         <blue>112</blue>
+        </color>
+       </brush>
+      </colorrole>
+     </active>
+     <inactive>
+      <colorrole role="WindowText">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>112</red>
+         <green>112</green>
+         <blue>112</blue>
+        </color>
+       </brush>
+      </colorrole>
+     </inactive>
+     <disabled>
+      <colorrole role="WindowText">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>190</red>
+         <green>190</green>
+         <blue>190</blue>
+        </color>
+       </brush>
+      </colorrole>
+     </disabled>
+    </palette>
+   </property>
    <property name="frameShadow">
     <enum>QFrame::Plain</enum>
    </property>
@@ -319,6 +356,43 @@ QGroupBox::title
      <width>21</width>
      <height>601</height>
     </rect>
+   </property>
+   <property name="palette">
+    <palette>
+     <active>
+      <colorrole role="WindowText">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>112</red>
+         <green>112</green>
+         <blue>112</blue>
+        </color>
+       </brush>
+      </colorrole>
+     </active>
+     <inactive>
+      <colorrole role="WindowText">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>112</red>
+         <green>112</green>
+         <blue>112</blue>
+        </color>
+       </brush>
+      </colorrole>
+     </inactive>
+     <disabled>
+      <colorrole role="WindowText">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>190</red>
+         <green>190</green>
+         <blue>190</blue>
+        </color>
+       </brush>
+      </colorrole>
+     </disabled>
+    </palette>
    </property>
    <property name="frameShadow">
     <enum>QFrame::Plain</enum>
@@ -378,11 +452,11 @@ QGroupBox::title
   <zorder>xAxisHitbox</zorder>
   <zorder>yAxisHitbox</zorder>
   <zorder>xSliderLine</zorder>
-  <zorder>xSliderHandleLeft</zorder>
-  <zorder>xSliderHandleRight</zorder>
   <zorder>ySliderLine</zorder>
-  <zorder>ySliderHandleBottom</zorder>
+  <zorder>xSliderHandleRight</zorder>
+  <zorder>xSliderHandleLeft</zorder>
   <zorder>ySliderHandleTop</zorder>
+  <zorder>ySliderHandleBottom</zorder>
  </widget>
  <customwidgets>
   <customwidget>
