@@ -38,9 +38,6 @@ private:
 
     map<QString, QSize> standardSizes;
 
-    void RegisterStandardSizes();
-    void RegisterInitialSliderHandlesPos();
-
     ForwardMouseTracking* fMt;
 
 protected:
@@ -55,6 +52,12 @@ public:
     {
         return findChild<QCustomPlot*> ( "customPlot" );
     }
+
+    void RegisterStandardSizes();
+    void RegisterInitialSliderHandlesPos();
+    void RegisterMaxRanges ( bool forceUpdate );
+
+    QTime* refreshTime;
 
     QColor colorPalette[10];
 
