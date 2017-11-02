@@ -55,10 +55,10 @@ include_directories(widgets/include)
 add_subdirectory(widgets)
 
 #---Create the Qt based main program using the library
-add_executable(QtRootKinCalc ${CMAKE_SOURCE_DIR}/source/ExecKinCalcQt.cxx)
-target_link_libraries(QtRootKinCalc QCustomPlotLibs WidgetSourcesLib)
+add_executable(QinemaTic5 ${CMAKE_SOURCE_DIR}/source/ExecKinCalcQt.cxx)
+target_link_libraries(QinemaTic5 QCustomPlotLibs WidgetSourcesLib)
 
-install(TARGETS QtRootKinCalc DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(TARGETS QinemaTic5 DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 install(FILES ${CMAKE_SOURCE_DIR}/share/mass_db.dat DESTINATION ${CMAKE_INSTALL_PREFIX})
 
