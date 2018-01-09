@@ -5,18 +5,18 @@ It uses QCustomPlot from Emanuel Eichhammer to plot the graphs (http://www.qcust
 Runs on unix system only.
 requires cmake and Qt-dev libraries (installed through your linux distrib package manager)
 
-Installation steps:
+# Installation steps:
 
-create a build directory wherever you want:  
+**create a build directory wherever you want:**  
 mkdir build  
 cd build
 
-build using cmake:  
+**build using cmake:**  
 cmake build path/to/source
 
-compile:  
+**compile:**  
 make install
 
-execute:  
+**execute:**  
 cd path/to/source/exec  
 ./Qinematic5
