@@ -17,91 +17,99 @@ using namespace std;
 
 namespace Ui
 {
-class QZMainFrame;
+	class QZMainFrame;
 }
 
-class QZMainFrame : public QMainWindow
+class QZMainFrame: public QMainWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
-private:
-    Ui::QZMainFrame *ui;
+	private:
+		Ui::QZMainFrame *ui;
 
-    void RegisterChildrenDefaultValues();
-    bool IsValueOK ( QLineEdit* lineEdit );
+		void RegisterChildrenDefaultValues();
+		bool IsValueOK(QLineEdit* lineEdit);
 
-    bool isRootProcessDone;
+		bool isRootProcessDone;
 
-public:
-    explicit QZMainFrame ( QWidget *parent = 0 );
-    ~QZMainFrame();
+		map<string, string> lastProcessedSingleConvert;
 
-    QZPlotwidget* displayWidget;
-    void CreateDisplayWidget ( );
+	public:
+		explicit QZMainFrame(QWidget *parent = 0);
+		~QZMainFrame();
 
-    QLineEdit* activeSingleConvert;
+		QZPlotwidget* displayWidget;
+		void CreateDisplayWidget();
 
-    map<QLineEdit*, QString> defaultChildrenValues;
+		QLineEdit* activeSingleConvert;
 
-    bool invertEjecRecoil;
-    bool invertLabCMEn;
+		map<QLineEdit*, QString> defaultChildrenValues;
 
-protected:
-    virtual void closeEvent ( QCloseEvent * event );
+		bool invertEjecRecoil;
+		bool invertLabCMEn;
 
-public slots:
-    void InvertRecoilAndEjectile ( int state );
-    void InvertLabAndCMEk ( int state );
+	protected:
+		virtual void closeEvent(QCloseEvent * event);
 
-    void OnClickUpdateReac();
-    void OnClickGetKinematics();
-    void OnClickWriteTable();
-    void OnClickConvertSingle();
-    void OnClickPlotGraph();
+	public slots:
+		void InvertRecoilAndEjectile(int state);
+		void InvertLabAndCMEk(int state);
 
-    void ResetAllFields ( string mode );
+		void OnClickUpdateReac();
+		void OnClickGetKinematics();
+		void OnClickWriteTable();
+		void OnClickConvertSingle();
+		void OnClickPlotGraph();
 
-    void FillReacInfoFields ( string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamCMEkStr, double qValGsGs, bool aboveThr );
+		void ResetAllFields(string mode);
 
-    void UpdateReacListBox ( vector<string> reacList );
+		void FillReacInfoFields(string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamCMEkStr, double qValGsGs, bool aboveThr);
 
-    void SetSingleConvertValues ( map<string, string> resMap );
+		void UpdateReacListBox(vector<string> reacList);
 
-    void ResetDefaultValue();
+		void SetSingleConvertValues(map<string, string> resMap);
+		void EnableSecondSolution(bool enable);
+		void SwitchToSecondSolution();
 
-    void RedrawPlotWidget ( string plotTitle );
+		void ResetDefaultValue();
 
-    void AddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
+		void RedrawPlotWidget(string plotTitle);
 
-signals:
-    void KillApp();
+		void AddGraph(string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel, bool countGraph = true);
 
-    void RequestUpdateReac ( string beamStr, string targetStr, string ejecStr, string recoilStr,
-                             string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn );
-    void RequestGetKinematics ( string beamStr, string targetStr, string ejecStr, string recoilStr,
-                                string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn );
-    void RequestWriteTable ( int reacID, string xMinStr, string xMaxStr, string stepWidthStr );
-    void RequestConvertSingle ( int reacID, QLineEdit* lineEdit );
-    void RequestPlotGraph ( vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr );
+	signals:
+		void KillApp();
 
-    void ForwardAddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
+		void RequestUpdateReac(string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamExStr, string targetExStr, string ejecExStr,
+				string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn);
+		void RequestGetKinematics(string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamExStr, string targetExStr, string ejecExStr,
+				string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn);
+		void RequestWriteTable(int reacID, string xMinStr, string xMaxStr, string stepWidthStr);
+		void RequestConvertSingle(int reacID, QLineEdit* lineEdit);
+		void RequestPlotGraph(vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr);
+
+		void ForwardAddGraph(string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel, bool countGraph = true);
 };
 
-class ForwardDoubleClick : public QObject
+class ForwardDoubleClick: public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-private:
+	private:
 
-protected:
-    bool eventFilter ( QObject* obj, QEvent* event );
+	protected:
+		bool eventFilter(QObject* obj, QEvent* event);
 
-public:
-    ForwardDoubleClick() {}
-    ~ForwardDoubleClick() {}
+	public:
+		ForwardDoubleClick()
+		{
+		}
+		~ForwardDoubleClick()
+		{
+		}
 };
 
-void HandleSingleConvertEnabled ( QWidget* obj, QLineEdit* toEnable );
+void HandleSingleConvertEnabled(QWidget* obj, QLineEdit* toEnable);
 
 #endif // QZMAINFRAME_H
 

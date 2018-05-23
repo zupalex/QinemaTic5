@@ -14,61 +14,68 @@ using namespace std;
 
 class QZMainFrame;
 
-class CalcMonitor : public QObject
+class CalcMonitor: public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-private:
-    CalcMonitor() {};
+	private:
+		CalcMonitor()
+		{
+		}
+		;
 
-    static CalcMonitor* s_instance;
-    QZMainFrame* mainFrame;
+		static CalcMonitor* s_instance;
+		QZMainFrame* mainFrame;
 
-    bool errorState;
+		bool errorState;
 
-    void SetButtonNameToVar();
+		void SetButtonNameToVar();
 
-public:
-    ~CalcMonitor() {};
+	public:
+		~CalcMonitor()
+		{
+		}
+		;
 
-    static CalcMonitor* CreateCalcMonitor ();
+		static CalcMonitor* CreateCalcMonitor();
 
-    static CalcMonitor* sinstance()
-    {
-        return s_instance;
-    }
+		static CalcMonitor* sinstance()
+		{
+			return s_instance;
+		}
 
-    void SetMainFrame ( QZMainFrame* mainFrame_ );
-    void ResetState();
+		void SetMainFrame(QZMainFrame* mainFrame_);
+		void ResetState();
 
-    QZMainFrame* GetMainFrame();
+		QZMainFrame* GetMainFrame();
 
-    map<string, string> buttonNameToVar;
+		map<string, string> buttonNameToVar;
 
-    vector<string> GetReacList();
+		vector<string> GetReacList();
 
-    std::map<string, RootKinCalc> kinResMap;
-    RootKinCalc* lastKinCalc;
+		std::map<string, RootKinCalc> kinResMap;
+		RootKinCalc* lastKinCalc;
 
-public slots:
-    void UpdateReacInfo ( string beamStr, string targetStr, string ejecStr, string recoilStr,
-                          string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn );
-    void GetReacKinematics ( string beamStr, string targetStr, string ejecStr, string recoilStr,
-                             string beamEkStr, string beamExStr, string targetExStr, string ejecExStr, string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn );
-    void WriteOutputTable ( int reacID, string xMinStr, string xMaxStr, string stepWidthStr );
-    void ConvertSingleValue ( int reacID, QLineEdit* lineEdit );
-    void PlotKinematicsGraph ( vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr );
+	public slots:
+		void UpdateReacInfo(string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamExStr, string targetExStr, string ejecExStr,
+				string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn);
+		void GetReacKinematics(string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamExStr, string targetExStr, string ejecExStr,
+				string recoilExStr, string beamCMEkStr, bool invertRecoilEjec, bool invertLabCMEn);
+		void WriteOutputTable(int reacID, string xMinStr, string xMaxStr, string stepWidthStr);
+		void ConvertSingleValue(int reacID, QLineEdit* lineEdit);
+		void PlotKinematicsGraph(vector<int> selectedEntries, string xAxisID, string yAxisID, string xMinStr, string xMaxStr, string stepWidthStr);
 
-signals:
-    void RequestResetInputFields ( string mode );
-    void RequestFillReacInfoFields ( string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamCMEkStr, double qValGsGs, bool aboveThr );
+	signals:
+		void RequestResetInputFields(string mode);
+		void RequestFillReacInfoFields(string beamStr, string targetStr, string ejecStr, string recoilStr, string beamEkStr, string beamCMEkStr, double qValGsGs, bool aboveThr);
 
-    void RequestUpdateReacList ( vector<string> reacList );
+		void RequestUpdateReacList(vector<string> reacList);
 
-    void RequestSetSingleConvertValues ( map<string, string> resMap );
+		void RequestSetSingleConvertValues(map<string, string> resMap);
+		void RequestEnableSecondSolution(bool enable);
 
-    void RedrawPlotWidget ( string graphTitle );
-    void AddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
+		void RedrawPlotWidget(string graphTitle);
+		void AddGraph(string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel, bool countGraph = true);
 };
 
 #endif // CALCMONITOR_H

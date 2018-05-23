@@ -31,7 +31,7 @@ double EvalGraph(vector<double> x_, vector<double> y_, double toEval)
 	{
 		lowItr = std::lower_bound(x_.begin(), x_.end(), toEval);
 
-		if (lowItr == x_.end()) lowItr--;
+		if (lowItr == x_.end()) return -1e6;
 
 		if (lowItr != x_.begin()) lowItr--;
 
@@ -44,8 +44,6 @@ double EvalGraph(vector<double> x_, vector<double> y_, double toEval)
 
 		return (y_[up] + (toEval - x_[up]) * (y_[low] - y_[up]) / (x_[low] - x_[up]));
 	}
-
-	return 1.;
 }
 
 bool CharIsDigit(char toCheck)
@@ -62,6 +60,11 @@ float GetKinResIDValue(KinCalcRes kcr, string ID)
 	else if (ID == "C.M. Angle") return kcr.ejecCMAngle;
 	else if (ID == "Recoil Lab. Angle") return kcr.recoilLabAngle;
 	else if (ID == "Recoil Lab. Energy") return kcr.recoilLabEnergy;
+	else if (ID == "Ejec. Lab. Angle 2") return kcr.ejecLabAngle2;
+	else if (ID == "Ejec. Lab. Energy 2") return kcr.ejecLabEnergy2;
+	else if (ID == "C.M. Angle 2") return kcr.ejecCMAngle2;
+	else if (ID == "Recoil Lab. Angle 2") return kcr.recoilLabAngle2;
+	else if (ID == "Recoil Lab. Energy 2") return kcr.recoilLabEnergy2;
 	else return -1;
 }
 
@@ -72,6 +75,11 @@ string GetKinResIDString(short ID)
 	else if (ID == 2) return "C.M. Angle";
 	else if (ID == 3) return "Recoil Lab. Angle";
 	else if (ID == 4) return "Recoil Lab. Energy";
+	else if (ID == 5) return "Ejec. Lab. Angle 2";
+	else if (ID == 6) return "Ejec. Lab. Energy 2";
+	else if (ID == 7) return "C.M. Angle 2";
+	else if (ID == 8) return "Recoil Lab. Angle 2";
+	else if (ID == 9) return "Recoil Lab. Energy 2";
 	else return "Invalid";
 }
 
@@ -596,10 +604,10 @@ void RootKinCalc::CalcKinematic(float ejecLabAngle_)
 
 	float amu = 931.502; // MeV
 
-	KinCalcRes* kcr;
-	kcr = &kinRes[ejecLabAngle_];
+	KinCalcRes* kcr = new KinCalcRes();
 
 	kcr->ejecLabAngle = ejecLabAngle_;
+	kcr->ejecLabAngle2 = ejecLabAngle_;
 
 	kcr->cosagl = cos(ejecLabAngle_ * dtr);
 
@@ -609,11 +617,22 @@ void RootKinCalc::CalcKinematic(float ejecLabAngle_)
 
 	kcr->d__2 = kcr->b * kcr->b - kcr->a * kcr->c;
 
-	if (kcr->d__2 < 0 || kcr->a == 0) kcr->b3L1 = 1;
-	else kcr->b3L1 = (-kcr->b + sqrt(kcr->d__2)) / kcr->a;
+	if (kcr->d__2 < 0 || kcr->a == 0)
+	{
+		kcr->b3L1 = -100;
+		kcr->b3L2 = -100;
+	}
+	else
+	{
+		kcr->b3L1 = (-kcr->b + sqrt(kcr->d__2)) / kcr->a;
+		kcr->b3L2 = (-kcr->b - sqrt(kcr->d__2)) / kcr->a;
+	}
 
-	if (1 - kcr->b3L1 * kcr->b3L1 <= 0 || kcr->b3L1 < 0) kcr->ejecLabEnergy = -1000;
+	if (1 - kcr->b3L1 * kcr->b3L1 <= 0 || kcr->b3L1 <= 0) kcr->ejecLabEnergy = -1000;
 	else kcr->ejecLabEnergy = massEjec * (1 / sqrt(1 - kcr->b3L1 * kcr->b3L1) - 1);
+
+	if (1 - kcr->b3L2 * kcr->b3L2 <= 0 || kcr->b3L2 <= 0) kcr->ejecLabEnergy2 = -1000;
+	else kcr->ejecLabEnergy2 = massEjec * (1 / sqrt(1 - kcr->b3L2 * kcr->b3L2) - 1);
 
 	if (kcr->ejecLabEnergy > 0)
 	{
@@ -624,13 +643,24 @@ void RootKinCalc::CalcKinematic(float ejecLabAngle_)
 		kcr->recoilLabAngle = (asin(
 				sqrt((kcr->ejecLabEnergy * (kcr->ejecLabEnergy + 2 * massEjec)) / (kcr->recoilLabEnergy * (kcr->recoilLabEnergy + 2 * massRecoil))) * sin(ejecLabAngle_ * dtr)))
 				* rtd;
+
+		kinRes[ejecLabAngle_] = *kcr;
 	}
-	else
+
+	if (kcr->ejecLabEnergy2 > 0)
 	{
-		kcr->ejecCMAngle = -1000;
-		kcr->recoilLabEnergy = -1000;
-		kcr->recoilLabAngle = -1000;
+		kcr->ejecCMAngle2 = acos((kcr->b3L2 * kcr->cosagl - betaC) / ((1 - betaC * kcr->b3L2 * kcr->cosagl) * beta3C)) * rtd;
+
+		kcr->recoilLabEnergy2 = beamEkLab + qValueFinal - kcr->ejecLabEnergy2;
+
+		kcr->recoilLabAngle2 = (asin(
+				sqrt((kcr->ejecLabEnergy2 * (kcr->ejecLabEnergy2 + 2 * massEjec)) / (kcr->recoilLabEnergy2 * (kcr->recoilLabEnergy2 + 2 * massRecoil))) * sin(ejecLabAngle_ * dtr)))
+				* rtd;
+
+		kinRes[ejecLabAngle_] = *kcr;
 	}
+
+	delete (kcr);
 
 	return;
 }
@@ -663,7 +693,7 @@ pair<vector<double>, vector<double>> RootKinCalc::PlotKinematicGraph(string xAxi
 	if (x_temp.size() == 0 || y_temp.size() == 0)
 	{
 		cerr << "Something went wrong... Unabled to find matching reaction in processed reaction list." << endl;
-		cerr << "Please try to \"Get Reac. Indo\" or \"Get Reac. Kinematics\" again and retry." << endl;
+		cerr << "Please try to \"Get Reac. Info\" or \"Get Reac. Kinematics\" again and retry." << endl;
 		return make_pair(xVect, yVect);
 	}
 
@@ -702,7 +732,7 @@ float RootKinCalc::ConvertSingleValue(string fromQuantity, string toQuantity, fl
 	if (x_temp.size() == 0 || y_temp.size() == 0)
 	{
 		cerr << "Something went wrong... Unabled to find matching reaction in processed reaction list." << endl;
-		cerr << "Please try to \"Get Reac. Indo\" or \"Get Reac. Kinematics\" again and retry." << endl;
+		cerr << "Please try to \"Get Reac. Info\" or \"Get Reac. Kinematics\" again and retry." << endl;
 		return 0.0;
 	}
 

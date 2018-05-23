@@ -10,106 +10,111 @@
 
 using namespace std;
 
-class ForwardMouseTracking : public QObject
+class ForwardMouseTracking: public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-private:
+	private:
 
-protected:
-    bool eventFilter ( QObject* obj, QEvent* event );
+	protected:
+		bool eventFilter(QObject* obj, QEvent* event);
 
-public:
-    ForwardMouseTracking() {}
-    ~ForwardMouseTracking() {}
+	public:
+		ForwardMouseTracking()
+		{
+		}
+		~ForwardMouseTracking()
+		{
+		}
 };
 
 namespace Ui
 {
-class QZPlotwidget;
+	class QZPlotwidget;
 }
 
-class QZPlotwidget : public QWidget
+class QZPlotwidget: public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
-private:
-    Ui::QZPlotwidget *ui;
+	private:
+		Ui::QZPlotwidget *ui;
 
-    map<QString, QSize> standardSizes;
+		map<QString, QSize> standardSizes;
 
-    ForwardMouseTracking* fMt;
+		ForwardMouseTracking* fMt;
 
-protected:
-    void MakeColorPalette();
-    virtual void resizeEvent ( QResizeEvent* event );
+	protected:
+		void MakeColorPalette();
+		virtual void resizeEvent(QResizeEvent* event);
 
-public:
-    explicit QZPlotwidget ( QWidget *parent = 0 );
-    ~QZPlotwidget();
+	public:
+		explicit QZPlotwidget(QWidget *parent = 0);
+		~QZPlotwidget();
 
-    QCustomPlot* GetQCustomPlot()
-    {
-        return findChild<QCustomPlot*> ( "customPlot" );
-    }
+		QCustomPlot* GetQCustomPlot()
+		{
+			return findChild<QCustomPlot*>("customPlot");
+		}
 
-    void RegisterStandardSizes();
-    void RegisterInitialSliderHandlesPos();
-    void RegisterMaxRanges ( bool forceUpdate );
+		int graphCount = 0;
 
-    QTime* refreshTime;
+		void RegisterStandardSizes();
+		void RegisterInitialSliderHandlesPos();
+		void RegisterMaxRanges(bool forceUpdate);
 
-    QColor colorPalette[10];
+		QTime* refreshTime;
 
-    map<QString, QPoint> initialSliderHandlesPos;
-    double xSliderRange;
-    double ySliderRange;
+		QColor colorPalette[10];
 
-    double xRangeBeforeDrag;
-    double yRangeBeforeDrag;
+		map<QString, QPoint> initialSliderHandlesPos;
+		double xSliderRange;
+		double ySliderRange;
 
-    double xMinBeforeDrag;
-    double xMaxBeforeDrag;
+		double xRangeBeforeDrag;
+		double yRangeBeforeDrag;
 
-    double yMaxBeforeDrag;
-    double yMinBeforeDrag;
+		double xMinBeforeDrag;
+		double xMaxBeforeDrag;
 
-    double origXMin;
-    double origXMax;
-    double origYMin;
-    double origYMax;
+		double yMaxBeforeDrag;
+		double yMinBeforeDrag;
 
-    double xAxisMin;
-    double xAxisMax;
+		double origXMin;
+		double origXMax;
+		double origYMin;
+		double origYMax;
 
-    double yAxisMax;
-    double yAxisMin;
+		double xAxisMin;
+		double xAxisMax;
 
-signals:
+		double yAxisMax;
+		double yAxisMin;
 
-public slots:
-    void AddGraph ( string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel );
+	signals:
 
-    void ToogleLogScale ( int isOn );
-    void ToogleAllowDrag ( int isOn );
-    void ToogleAllowDragX ( int isOn );
-    void ToogleAllowDragY ( int isOn );
+	public slots:
+		void AddGraph(string title, vector<double> x_, vector<double> y_, double xMin_, double xMax_, string xAxisLabel, string yAxisLabel, bool countGraph = true);
 
-    void RecenterAxis();
+		void ToogleLogScale(int isOn);
+		void ToogleAllowDrag(int isOn);
+		void ToogleAllowDragX(int isOn);
+		void ToogleAllowDragY(int isOn);
 
-    void RescaleXAxis();
-    void RescaleYAxis();
+		void RecenterAxis();
 
-    void UpdateXAxisRangeBoxes ( const QCPRange& newRange );
-    void UpdateYAxisRangeBoxes ( const QCPRange& newRange );
+		void RescaleXAxis();
+		void RescaleYAxis();
 
-    void ToogleGraphToolsGB();
+		void UpdateXAxisRangeBoxes(const QCPRange& newRange);
+		void UpdateYAxisRangeBoxes(const QCPRange& newRange);
 
-    void ChangeLineSize ( int newSize );
+		void ToogleGraphToolsGB();
+
+		void ChangeLineSize(int newSize);
 };
 
-QWidget* GetFirstParent ( QWidget* widget );
+QWidget* GetFirstParent(QWidget* widget);
 
 #endif // QZPLOTWIDGET_H
-
 
