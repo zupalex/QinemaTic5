@@ -264,18 +264,18 @@ void RootKinCalc::DecodeAtomicFormula(std::ifstream& mass_db, string toDecode, i
 	}
 	else
 	{
-		for (int i = 0; i < toDecode.length(); i++)
+		for (char c : toDecode)
 		{
-			if (CharIsDigit(toDecode[i]))
+			if (CharIsDigit(c))
 			{
 				string digit;
-				digit = toDecode[i];
+				digit = c;
 
 				massDigits.push_back(std::stoi(digit));
 			}
 			else
 			{
-				element += toDecode[i];
+				element += c;
 			}
 		}
 
@@ -488,9 +488,6 @@ void RootKinCalc::GetBaseKinematicInfo(int zBeam, int aBeam, int zTarget, int aT
 		return;
 	}
 
-	float dtr = M_PI / 180.;
-	float rtd = 180. / M_PI;
-
 	float amu = 931.502; // MeV
 
 	int zRecoil, aRecoil;
@@ -601,8 +598,6 @@ void RootKinCalc::CalcKinematic(float ejecLabAngle_)
 {
 	float dtr = M_PI / 180.;
 	float rtd = 180. / M_PI;
-
-	float amu = 931.502; // MeV
 
 	KinCalcRes* kcr = new KinCalcRes();
 

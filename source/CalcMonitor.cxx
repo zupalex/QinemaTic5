@@ -78,8 +78,8 @@ void CalcMonitor::UpdateReacInfo(string beamStr, string targetStr, string ejecSt
 
 	float beamEk = !beamEkStr.empty() ? stof(beamEkStr) : 0.0;
 
-	float beamEx = !beamExStr.empty() ? stof(beamExStr) : 0.0;
-	float targetEx = !targetExStr.empty() ? stof(targetExStr) : 0.0;
+//	float beamEx = !beamExStr.empty() ? stof(beamExStr) : 0.0;
+//	float targetEx = !targetExStr.empty() ? stof(targetExStr) : 0.0;
 	float ejecEx = !ejecExStr.empty() ? stof(ejecExStr) : 0.0;
 	float recEx = !recoilExStr.empty() ? stof(recoilExStr) : 0.0;
 
@@ -126,7 +126,7 @@ void CalcMonitor::ConvertSingleValue(int reacID, QLineEdit* lineEdit)
 {
 //     std::cout << "Clicked Convert Single Value Button\n";
 
-	if (reacID >= kinResMap.size() || reacID == -1) return;
+	if (reacID >= (int) kinResMap.size() || reacID == -1) return;
 
 //     cout << "Reaction ID: " << reacID << endl;
 
@@ -253,7 +253,7 @@ void CalcMonitor::WriteOutputTable(int reacID, string xMinStr, string xMaxStr, s
 //     std::cout << "Clicked Write Output Table Button\n";
 //     cout << "Reaction ID: " << reacID << endl;
 
-	if (reacID >= kinResMap.size() || reacID == -1) return;
+	if (reacID >= (int) kinResMap.size() || reacID == -1) return;
 
 	int xMin = stoi(xMinStr);
 	int xMax = stoi(xMaxStr);

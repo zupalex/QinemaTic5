@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+	<qresource>
+		<file alias="qinematic5-icon.png">images/qinematic5-icon.png</file>
+	</qresource>
+</RCC>

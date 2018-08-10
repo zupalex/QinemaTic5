@@ -21,6 +21,8 @@ QZMainFrame::QZMainFrame(QWidget *parent)
 {
 	ui->setupUi(this);
 
+	setWindowIcon(QIcon(":qinematic5-icon.png"));
+
 	ForwardDoubleClick* fDc = new ForwardDoubleClick();
 
 	QObject::connect(findChild<QToolButton*>("updateReacInfoBut"), SIGNAL(released()), this, SLOT(OnClickUpdateReac()));
@@ -241,10 +243,10 @@ bool QZMainFrame::IsValueOK(QLineEdit* lineEdit)
 {
 //     cout << "Checking value validity: " << lineEdit->objectName().toUtf8().constData() << endl;
 
-	QLineEdit* beamElementIF = findChild<QLineEdit*>("beamElementIF");
-	QLineEdit* targetElementIF = findChild<QLineEdit*>("targetElementIF");
-	QLineEdit* ejecElementIF = findChild<QLineEdit*>("ejecElementIF");
-	QLineEdit* recoilElementIF = findChild<QLineEdit*>("recoilElementIF");
+//	QLineEdit* beamElementIF = findChild<QLineEdit*>("beamElementIF");
+//	QLineEdit* targetElementIF = findChild<QLineEdit*>("targetElementIF");
+//	QLineEdit* ejecElementIF = findChild<QLineEdit*>("ejecElementIF");
+//	QLineEdit* recoilElementIF = findChild<QLineEdit*>("recoilElementIF");
 
 	QLineEdit* beamEkIF = findChild<QLineEdit*>("beamEkIF");
 	QLineEdit* beamExIF = findChild<QLineEdit*>("beamExIF");

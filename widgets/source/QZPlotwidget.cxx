@@ -676,7 +676,9 @@ bool ForwardMouseTracking::eventFilter(QObject* obj, QEvent* event)
 	}
 	else if (plotWidg->GetQCustomPlot()->axisRect()->rangeZoom() != 0)
 	{
-		if (event->type() == QEvent::Wheel) QCoreApplication::sendEvent(plotWidg->GetQCustomPlot(), event);
+		if (event->type() == QEvent::Wheel) return QCoreApplication::sendEvent(plotWidg->GetQCustomPlot(), event);
+
+		return false;
 	}
 	else return QObject::eventFilter(obj, event);
 }

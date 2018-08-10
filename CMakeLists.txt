@@ -7,6 +7,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
 #Specify the install prefix as the exec directory unless specified
 file(MAKE_DIRECTORY exec)
@@ -36,14 +37,8 @@ message(STATUS "QCustomPlot website: http://www.qcustomplot.com/index.php/")
 include_directories(qcustomplot/include)
 add_subdirectory(qcustomplot)
 
-#Find the ROOT package and configure the flags and paths
-message(STATUS "Finding ROOT packages")
-find_package (ROOT REQUIRED)
-message(STATUS "cmake cxx flags set to ${CMAKE_CXX_FLAGS} ${ROOT_CXX_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ROOT_CXX_FLAGS}")
-message(STATUS "ROOT Include Dir: ${ROOT_INCLUDE_DIR}")
-include_directories(${ROOT_INCLUDE_DIR})
-link_directories(${ROOT_LIBRARY_DIR})
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wno-unused-parameter -Wno-unused-but-set-variable -pedantic -fPIC -std=c++11 -g")
+
 
 message(STATUS "If the build process failed to find the Qt5 packages, install the Qt5 packages (e.g. \"qtbase5-dev\" for Ubuntu and Debian, \"qt5\" for Mac OSX, \"qt5-qtbase-devel\" on Fedora, ...)")
 
@@ -55,7 +50,7 @@ include_directories(widgets/include)
 add_subdirectory(widgets)
 
 #---Create the Qt based main program using the library
-add_executable(QinemaTic5 ${CMAKE_SOURCE_DIR}/source/ExecKinCalcQt.cxx)
+add_executable(QinemaTic5 ${CMAKE_SOURCE_DIR}/source/ExecKinCalcQt.cxx ${CMAKE_SOURCE_DIR}/share/images-resources.qrc)
 target_link_libraries(QinemaTic5 QCustomPlotLibs WidgetSourcesLib)
 
 install(TARGETS QinemaTic5 DESTINATION ${CMAKE_INSTALL_PREFIX})
