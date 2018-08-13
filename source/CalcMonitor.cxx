@@ -1,4 +1,5 @@
 #include "CalcMonitor.h"
+#include <QDir>
 
 CalcMonitor* CalcMonitor::s_instance = nullptr;
 
@@ -312,14 +313,7 @@ void CalcMonitor::WriteOutputTable(int reacID, string xMinStr, string xMaxStr, s
 	std::size_t foundStar2 = outputName.find("*");
 	outputName.replace(foundStar2, 2, "xR");
 
-	struct stat checkDir;
-
-	stat("./tables/", &checkDir);
-
-	if (!(checkDir.st_mode & S_IFDIR))
-	{
-		mkdir("./tables/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	}
+	if (!QDir("./tables/").exists()) QDir().mkdir("./tables/");
 
 	outputName = "./tables/" + outputName + ".dat";
 
